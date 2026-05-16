@@ -16,8 +16,8 @@ html {
   --card-foreground: oklch(0.97 0.005 80);
   --popover: oklch(0.16 0.008 80);
   --popover-foreground: oklch(0.97 0.005 80);
-  --primary: oklch(0.72 0.16 60);
-  --primary-foreground: oklch(0.12 0.02 60);
+  --primary: oklch(0.68 0.16 245);
+  --primary-foreground: oklch(0.99 0.005 240);
   --secondary: oklch(0.22 0.012 80);
   --secondary-foreground: oklch(0.95 0.005 80);
   --muted: oklch(0.18 0.008 80);
@@ -28,8 +28,8 @@ html {
   --destructive-foreground: oklch(0.98 0 0);
   --border: oklch(0.26 0.01 80);
   --input: oklch(0.22 0.01 80);
-  --ring: oklch(0.72 0.16 60);
-  --chart-1: oklch(0.72 0.16 60);
+  --ring: oklch(0.68 0.16 245);
+  --chart-1: oklch(0.68 0.16 245);
   --chart-2: oklch(0.65 0.14 200);
   --chart-3: oklch(0.75 0.12 130);
   --chart-4: oklch(0.65 0.16 290);
@@ -37,12 +37,12 @@ html {
   --radius: 0.75rem;
   --sidebar: oklch(0.06 0.005 80);
   --sidebar-foreground: oklch(0.95 0.005 80);
-  --sidebar-primary: oklch(0.72 0.16 60);
-  --sidebar-primary-foreground: oklch(0.12 0.02 60);
+  --sidebar-primary: oklch(0.68 0.16 245);
+  --sidebar-primary-foreground: oklch(0.99 0.005 240);
   --sidebar-accent: oklch(0.22 0.012 80);
   --sidebar-accent-foreground: oklch(0.97 0.005 80);
   --sidebar-border: oklch(0.22 0.01 80);
-  --sidebar-ring: oklch(0.72 0.16 60);
+  --sidebar-ring: oklch(0.68 0.16 245);
 }
 
 @theme inline {
@@ -133,4 +133,40 @@ html {
    the same name so the browser morphs one into the other across nav. */
 .heyg-logo-shared {
   view-transition-name: heyg-logo;
+}
+
+/* Dashboard content quietly crossfades on section change. The sidebar
+   and topbar stay completely still. */
+.dashboard-content {
+  view-transition-name: dashboard-content;
+}
+
+::view-transition-old(dashboard-content),
+::view-transition-new(dashboard-content) {
+  animation-duration: 0.22s;
+  animation-timing-function: ease-out;
+  animation-fill-mode: both;
+  /* Stack the in/out so the new page is visible immediately, no
+     blank flash between them. */
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(dashboard-content) {
+  animation-name: dashboard-fade-out;
+}
+
+::view-transition-new(dashboard-content) {
+  animation-name: dashboard-fade-in;
+}
+
+@keyframes dashboard-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes dashboard-fade-in {
+  from {
+    opacity: 0;
+  }
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { PhoneCall, DollarSign, Star, AlertTriangle, ArrowUpRight, Sparkles } from "lucide-react"
+import { PhoneCall, CurrencyDollar, Star, Warning, ArrowUpRight, Sparkle } from "@phosphor-icons/react/dist/ssr"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { DashboardTopbar } from "@/components/dashboard/topbar"
@@ -46,19 +46,19 @@ export default function DashboardOverviewPage() {
           <Card className="p-3">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                <PhoneCall className="w-4 h-4" /> Calls today
+                <PhoneCall className="w-4 h-4" weight="duotone" /> Calls today
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="text-6xl lg:text-7xl font-medium leading-none">{cTodays}</div>
-              <div className="text-sm text-emerald-700">100% answered</div>
+              <div className="text-sm text-emerald-400/90">100% answered</div>
             </CardContent>
           </Card>
 
           <Card className="p-3">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                <DollarSign className="w-4 h-4" /> Recovered revenue
+                <CurrencyDollar className="w-4 h-4" weight="duotone" /> Recovered revenue
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -70,7 +70,7 @@ export default function DashboardOverviewPage() {
           <Card className="p-3">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                <Star className="w-4 h-4" /> Top recommended
+                <Star className="w-4 h-4" weight="duotone" /> Top recommended
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -82,7 +82,7 @@ export default function DashboardOverviewPage() {
           <Card className="p-3">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4" /> Churn risk
+                <Warning className="w-4 h-4" weight="duotone" /> Churn risk
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -125,9 +125,9 @@ export default function DashboardOverviewPage() {
                       variant="secondary"
                       className={
                         c.status === "active"
-                          ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-100"
+                          ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/10"
                           : c.status === "escalated"
-                            ? "bg-amber-100 text-amber-800 hover:bg-amber-100"
+                            ? "bg-amber-500/10 text-amber-300 border border-amber-500/20 hover:bg-amber-500/10"
                             : ""
                       }
                     >
@@ -142,7 +142,7 @@ export default function DashboardOverviewPage() {
           <Card className="p-2">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-primary" /> This week's wins
+                <Sparkle className="w-4 h-4 text-primary" weight="fill" /> This week's wins
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">

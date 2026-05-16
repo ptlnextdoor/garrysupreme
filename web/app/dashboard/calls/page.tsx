@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Phone, ChevronRight, MessagesSquare } from "lucide-react"
+import { Phone, CaretRight, ChatsCircle } from "@phosphor-icons/react/dist/ssr"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { DashboardTopbar } from "@/components/dashboard/topbar"
@@ -63,9 +63,9 @@ export default function CallsPage() {
                           className={cn(
                             "shrink-0",
                             c.status === "active"
-                              ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-100"
+                              ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/10"
                               : c.status === "escalated"
-                                ? "bg-amber-100 text-amber-800 hover:bg-amber-100"
+                                ? "bg-amber-500/10 text-amber-300 border border-amber-500/20 hover:bg-amber-500/10"
                                 : "",
                           )}
                         >
@@ -78,7 +78,7 @@ export default function CallsPage() {
                       <div className="text-xs text-muted-foreground">{timeAgo(c.startedAt)}</div>
                       <div className="text-xs text-muted-foreground mt-0.5">{fmtDuration(c.durationSec)}</div>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    <CaretRight className="w-4 h-4 text-muted-foreground" />
                   </button>
                 )
               })}
@@ -92,7 +92,7 @@ export default function CallsPage() {
                 <div className="px-6 pt-6 pb-4 border-b border-border">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                      <Phone className="w-4 h-4" />
+                      <Phone className="w-4 h-4" weight="duotone" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-base font-medium truncate">{selected.customerNameSnapshot}</div>
@@ -104,9 +104,9 @@ export default function CallsPage() {
                       variant="secondary"
                       className={cn(
                         selected.status === "active"
-                          ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-100"
+                          ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/10"
                           : selected.status === "escalated"
-                            ? "bg-amber-100 text-amber-800 hover:bg-amber-100"
+                            ? "bg-amber-500/10 text-amber-300 border border-amber-500/20 hover:bg-amber-500/10"
                             : "",
                       )}
                     >
@@ -148,7 +148,7 @@ export default function CallsPage() {
               </>
             ) : (
               <CardContent className="py-20 text-center text-muted-foreground">
-                <MessagesSquare className="w-8 h-8 mx-auto mb-3 opacity-60" />
+                <ChatsCircle className="w-8 h-8 mx-auto mb-3 opacity-60" weight="duotone" />
                 <div className="text-sm">Select a call to view its transcript.</div>
               </CardContent>
             )}
