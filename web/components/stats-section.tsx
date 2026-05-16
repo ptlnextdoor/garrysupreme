@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 
 function useCountUp(end: number, duration = 2000) {
   const [count, setCount] = useState(0)
@@ -27,26 +27,28 @@ function useCountUp(end: number, duration = 2000) {
     return () => cancelAnimationFrame(animationFrame)
   }, [end, duration, hasStarted])
 
-  return { count, start: () => setHasStarted(true), hasStarted }
+  const start = useCallback(() => setHasStarted(true), [])
+
+  return { count, start, hasStarted }
 }
 
 export function StatsSection() {
   const [isVisible, setIsVisible] = useState(false)
 
-  const missed = useCountUp(62, 2000)
-  const lost = useCountUp(126, 2200)
-  const lep = useCountUp(25, 2000)
-  const purchase = useCountUp(1.2, 2400)
+  const { count: missedCount, start: startMissed } = useCountUp(62, 2000)
+  const { count: lostCount, start: startLost } = useCountUp(126, 2200)
+  const { count: lepCount, start: startLep } = useCountUp(25, 2000)
+  const { count: purchaseCount, start: startPurchase } = useCountUp(1.2, 2400)
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && !isVisible) {
           setIsVisible(true)
-          missed.start()
-          lost.start()
-          lep.start()
-          purchase.start()
+          startMissed()
+          startLost()
+          startLep()
+          startPurchase()
         }
       },
       { threshold: 0.3 },
@@ -56,26 +58,26 @@ export function StatsSection() {
     if (section) observer.observe(section)
 
     return () => observer.disconnect()
-  }, [isVisible])
+  }, [isVisible, startMissed, startLost, startLep, startPurchase])
 
   const stats = [
     {
-      value: `${Math.round(missed.count)}%`,
+      value: `${Math.round(missedCount)}%`,
       label: "of SMB calls go unanswered",
       source: "Industry studies, 2025-26",
     },
     {
-      value: `$${Math.round(lost.count)}K`,
+      value: `$${Math.round(lostCount)}K`,
       label: "avg annual revenue lost per SMB",
       source: "Industry aggregate",
     },
     {
-      value: `${Math.round(lep.count)}M+`,
+      value: `${Math.round(lepCount)}M+`,
       label: "Americans with limited English",
       source: "US Census",
     },
     {
-      value: `$${purchase.count.toFixed(1)}T`,
+      value: `$${purchaseCount.toFixed(1)}T`,
       label: "purchasing power from LEP households",
       source: "Frederick Interpreting",
     },
@@ -90,7 +92,7 @@ export function StatsSection() {
             className="text-3xl md:text-5xl font-normal text-foreground max-w-3xl mx-auto text-balance"
             style={{ fontFamily: "var(--font-playfair)" }}
           >
-            The numbers your business probably doesn't talk about.
+            The numbers your business probably doesn&apos;t talk about.
           </h2>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10">

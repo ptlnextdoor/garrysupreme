@@ -110,39 +110,35 @@ export function GBrainGraph() {
           linkWidth={1}
           cooldownTicks={120}
           nodeRelSize={1}
-          nodeLabel={(n: GBrainNode) => `${typeLabels[n.type]} · ${n.label}`}
-          onNodeClick={(n: GBrainNode) => setSelected(n)}
-          nodeCanvasObject={(n: GBrainNode, ctx, globalScale) => {
-            const r = nodeRadius[n.type]
+          nodeLabel={(n) => `${typeLabels[n.type as GBrainNodeType]} · ${n.label}`}
+          onNodeClick={(n) => setSelected(n as GBrainNode)}
+          nodeCanvasObject={(n, ctx, globalScale) => {
+            const nodeType = n.type as GBrainNodeType
+            const x = n.x ?? 0
+            const y = n.y ?? 0
+            const r = nodeRadius[nodeType]
             ctx.beginPath()
-            ctx.arc((n as unknown as { x: number }).x, (n as unknown as { y: number }).y, r, 0, 2 * Math.PI, false)
-            ctx.fillStyle = nodeColors[n.type]
+            ctx.arc(x, y, r, 0, 2 * Math.PI, false)
+            ctx.fillStyle = nodeColors[nodeType]
             ctx.fill()
             ctx.lineWidth = 1.5 / globalScale
             ctx.strokeStyle = "rgba(255,255,255,0.9)"
             ctx.stroke()
 
-            if (globalScale > 1.4 || n.type === "customer" || n.type === "insight") {
+            if (globalScale > 1.4 || nodeType === "customer" || nodeType === "insight") {
               const fontSize = Math.max(11 / globalScale, 4)
               ctx.font = `${fontSize}px Inter, sans-serif`
               ctx.fillStyle = "rgba(240, 240, 245, 0.9)"
               ctx.textAlign = "center"
               ctx.textBaseline = "top"
               const label = n.label.length > 22 ? n.label.slice(0, 21) + "…" : n.label
-              ctx.fillText(label, (n as unknown as { x: number }).x, (n as unknown as { y: number }).y + r + 2)
+              ctx.fillText(label, x, y + r + 2)
             }
           }}
-          nodePointerAreaPaint={(n: GBrainNode, color, ctx) => {
-            const r = nodeRadius[n.type] + 3
+          nodePointerAreaPaint={(n, color, ctx) => {
+            const r = nodeRadius[n.type as GBrainNodeType] + 3
             ctx.beginPath()
-            ctx.arc(
-              (n as unknown as { x: number }).x,
-              (n as unknown as { y: number }).y,
-              r,
-              0,
-              2 * Math.PI,
-              false,
-            )
+            ctx.arc(n.x ?? 0, n.y ?? 0, r, 0, 2 * Math.PI, false)
             ctx.fillStyle = color
             ctx.fill()
           }}
