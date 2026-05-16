@@ -1,11 +1,6 @@
-# Archived / reference material (kept locally, not committed)
-archive/homie-template/
-archive/homie-template.zip
-archive/pulse-hyperframes-sample/
-archive/intro/frames*/
-archive/intro/*.mp4
-archive/intro/node_modules/
-archive/intro/package-lock.json
+# Original Homie template (kept locally as reference, not committed)
+homie-template/
+homie-template.zip
 
 # Node / Next.js
 node_modules/
@@ -16,13 +11,20 @@ out/
 .vercel/
 *.tsbuildinfo
 
-# Local app state / generated data from the archived Pulse backend
+# Local app state / generated data
 .context/screenshots/
 gbrain/
-archive/yc-gbrain/gbrain/state.json
-archive/yc-gbrain/gbrain/orders/*.md
-archive/yc-gbrain/dashboard/dist/
-archive/yc-gbrain/server/dist/
+yc-gbrain/gbrain/state.json
+yc-gbrain/gbrain/orders/*.md
+yc-gbrain/dashboard/dist/
+yc-gbrain/dashboard/node_modules/
+yc-gbrain/server/dist/
+
+# Intro video render artifacts (frames, MP4s, deps)
+archive/intro/frames*/
+archive/intro/*.mp4
+archive/intro/node_modules/
+archive/intro/package-lock.json
 
 # Env
 .env
