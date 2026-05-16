@@ -1,0 +1,49 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "get_context",
+      "description": "Loads the customer profile and ranked menu before making recommendations. Must be called at the start of every call. The phone_number is automatically extracted from the Vapi webhook body at the backend — pass an empty string if you don't know it.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "phone_number": {
+            "type": "string",
+            "description": "The caller's phone number. Pass empty string — backend reads it from the webhook body automatically."
+          },
+          "request": {
+            "type": "string",
+            "description": "What the customer said they want, in their own words. Used to score and rank menu items. Example: 'something warm and not too sweet, no dairy'."
+          }
+        },
+        "required": ["phone_number", "request"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "save_order",
+      "description": "Saves a confirmed order after the customer has agreed to all items and modifications. Call this only once per call, after full order confirmation. Returns a pickup time.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "List of ordered items as plain strings. Include modifications inline. Example: ['Oat Milk Latte (less sweet)', 'Chai Latte (oat milk, extra spicy)']."
+          },
+          "customer_name": {
+            "type": "string",
+            "description": "The customer's first name or 'there' if unknown. Used to call out the order at pickup."
+          },
+          "total": {
+            "type": "number",
+            "description": "Optional. Total price in dollars. Omit if unsure — backend will calculate."
+          }
+        },
+        "required": ["items", "customer_name"]
+      }
+    }
+  }
+]
