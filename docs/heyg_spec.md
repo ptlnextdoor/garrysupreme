@@ -1,4 +1,4 @@
-# Pulse — Product Specification
+# hey, G! — Product Specification
 
 > **"What if every business could talk to every customer — simultaneously, in their language, remembering everything?"**
 
@@ -20,15 +20,15 @@ The broken interface isn't just menus. It's:
 - **Context mismatch** — the business thinks in SKUs and product names; the customer thinks in feelings ("something warm and sweet like the chai I grew up with")
 - **Time pressure** — recreational shopping should be fun, not homework
 
-**Pulse fixes the interface.**
+**hey, G! fixes the interface.**
 
 ---
 
-## 2. What Pulse Is
+## 2. What hey, G! Is
 
-Pulse gives every business an AI voice agent that customers can call to order, ask questions, and get personalized help — in their language, at their pace, with zero pressure.
+hey, G! gives every business an AI voice agent that customers can call to order, ask questions, and get personalized help — in their language, at their pace, with zero pressure.
 
-What makes Pulse different from every other AI voice bot: **it has two brains.**
+What makes hey, G! different from every other AI voice bot: **it has two brains.**
 
 ### The Company Brain (powered by GBrain)
 Everything the business knows — menu items, ingredients, allergens, pricing, policies, seasonal specials, what's in stock, popular combinations, operating hours. Stored as GBrain knowledge items (markdown files) that the business can edit and the AI reads in real-time.
@@ -37,7 +37,7 @@ Everything the business knows — menu items, ingredients, allergens, pricing, p
 Everything the business has learned about THIS specific customer — order history, taste preferences, dietary needs, communication style, language preference, family context. Updated automatically after every interaction. Compounds over time.
 
 ### The Magic
-When a customer calls, Pulse merges both brains in real-time:
+When a customer calls, hey, G! merges both brains in real-time:
 
 ```
 Customer says: "I want something sweet, like chai, but cold"
@@ -49,7 +49,7 @@ Customer Brain knows: Prefers oat milk, likes cardamom,
                       doesn't like overly heavy drinks,
                       tried Coconut Cold Brew last week and loved it
 
-Pulse says: "You'd love the Iced Chai Latte — it's like your
+hey, G! says: "You'd love the Iced Chai Latte — it's like your
             usual hot chai but cold and refreshing. Want me to
             add that cardamom you love? Or since you liked the
             Coconut Cold Brew last week, I could do that with
@@ -71,7 +71,7 @@ Customer dials business phone number
          │
          │  mid-conversation function calls
          ▼
-    Pulse Backend (Fastify)
+    hey, G! Backend (Fastify)
     ├── get_customer_context(phone) → reads Customer Brain from GBrain
     ├── get_menu(query) → reads Company Brain from GBrain
     └── save_preferences(data) → writes learned preferences back to GBrain
@@ -128,7 +128,7 @@ GBrain is not a nice-to-have — it IS the product's core:
 
 ### Enterprise (Vision)
 - National chains that want to open a new ordering channel (phone-based ordering)
-- Starbucks, Domino's, etc. — phone ordering powered by Pulse
+- Starbucks, Domino's, etc. — phone ordering powered by hey, G!
 - Customer intelligence data that they can't get from their app
 
 ---
@@ -146,11 +146,11 @@ GBrain is not a nice-to-have — it IS the product's core:
 
 #### 1. Never Miss a Call Again
 - **Current state:** Sarah misses ~62% of calls (industry average)
-- **With Pulse:** 0% missed. Every call answered instantly, 24/7, simultaneously.
+- **With hey, G!:** 0% missed. Every call answered instantly, 24/7, simultaneously.
 - **Revenue impact:** At $100-$200 per missed call in a bakery (custom cake orders, catering inquiries, advance orders), recovering even 5 calls/week = **$26,000-$52,000/year in recovered revenue**
 
 #### 2. Scale Without Hiring
-- Pulse handles **unlimited parallel calls**. During Sarah's lunch rush, 5 people call at once. Without Pulse, 4 get voicemail. With Pulse, all 5 get a personalized experience.
+- hey, G! handles **unlimited parallel calls**. During Sarah's lunch rush, 5 people call at once. Without hey, G!, 4 get voicemail. With hey, G!, all 5 get a personalized experience.
 - This scales her capacity without adding headcount.
 
 #### 3. Customers Feel Known
@@ -160,8 +160,8 @@ GBrain is not a nice-to-have — it IS the product's core:
 
 #### 4. New Revenue From Recommendations
 - Companies that personalize well generate **10-30% more revenue** (McKinsey)
-- Pulse recommends items customers didn't know they'd love
-- Example: Before Pulse recommendations, Sarah's lavender latte sold 2/week. After: 14/week.
+- hey, G! recommends items customers didn't know they'd love
+- Example: Before hey, G! recommendations, Sarah's lavender latte sold 2/week. After: 14/week.
 - **Personalized recommendations can increase average order value by up to 25%**
 
 #### 5. Business Intelligence You've Never Had
@@ -201,9 +201,9 @@ GBrain is not a nice-to-have — it IS the product's core:
 
 **No. Absolutely not.**
 
-Pulse is **additive, not replacement.** Here's why:
+hey, G! is **additive, not replacement.** Here's why:
 
-| Task | Human Employee | Pulse |
+| Task | Human Employee | hey, G! |
 |------|---------------|-------|
 | Answer the phone when busy | ❌ Can't — hands are full | ✅ Always available |
 | Remember every customer's preferences | ❌ Forgets, shifts change | ✅ Perfect memory |
@@ -213,9 +213,9 @@ Pulse is **additive, not replacement.** Here's why:
 | Build personal relationships face-to-face | ✅ Irreplaceable | ❌ Phone only |
 | Work after hours | ❌ Goes home | ✅ 24/7 |
 
-**The pitch to SMB owners:** *"You didn't hire your baker to answer phones. Pulse answers the phone so your baker can bake."*
+**The pitch to SMB owners:** *"You didn't hire your baker to answer phones. hey, G! answers the phone so your baker can bake."*
 
-Pulse handles the calls your team is already missing. It's not taking anyone's job — it's doing the job nobody was doing.
+hey, G! handles the calls your team is already missing. It's not taking anyone's job — it's doing the job nobody was doing.
 
 ---
 
@@ -223,7 +223,7 @@ Pulse handles the calls your team is already missing. It's not taking anyone's j
 
 #### Conservative ROI Model (Sarah's Bakery)
 
-| Metric | Before Pulse | With Pulse | Delta |
+| Metric | Before hey, G! | With hey, G! | Delta |
 |--------|-------------|-----------|-------|
 | Calls received/day | 20 | 20 | — |
 | Calls answered | 8 (40%) | 20 (100%) | +12/day |
@@ -231,7 +231,7 @@ Pulse handles the calls your team is already missing. It's not taking anyone's j
 | Avg order value | $25 | $28 (+personalized upsell) | +$3 |
 | Daily revenue from calls | $125 | $392 | **+$267/day** |
 | Monthly revenue from calls | $3,750 | $11,760 | **+$8,010/mo** |
-| Pulse cost | $0 | -$249/mo | -$249/mo |
+| hey, G! cost | $0 | -$249/mo | -$249/mo |
 | **Net monthly gain** | — | — | **+$7,761/mo** |
 | **Annual ROI** | — | — | **$93,132/year** |
 | **ROI multiple** | — | — | **31× return** |
@@ -242,7 +242,7 @@ Even at HALF these numbers (50% of recovered calls convert, zero upsell effect),
 
 ### ⚖️ Is It Better Than Hiring More People?
 
-| Factor | Hire a Part-Time Receptionist | Pulse |
+| Factor | Hire a Part-Time Receptionist | hey, G! |
 |--------|------------------------------|-------|
 | **Monthly cost** | $2,000-3,000 (part-time, no benefits) | $99-249 |
 | **Availability** | 20-30 hours/week | 24/7/365 |
@@ -256,13 +256,13 @@ Even at HALF these numbers (50% of recovered calls convert, zero upsell effect),
 | **Scales with business growth** | Need to hire more | Automatically scales |
 | **Personalization at scale** | Degrades as customer base grows | Improves as customer base grows |
 
-**Bottom line:** Pulse costs 5-10% of a part-time hire while delivering more capability. It's not a replacement for a receptionist — it's better than a receptionist at phone-based customer interactions, at a fraction of the cost.
+**Bottom line:** hey, G! costs 5-10% of a part-time hire while delivering more capability. It's not a replacement for a receptionist — it's better than a receptionist at phone-based customer interactions, at a fraction of the cost.
 
 ---
 
 ### 🏢 Why Buy This Over Big Companies?
 
-| Competitor | What They Do | Why Pulse Wins |
+| Competitor | What They Do | Why hey, G! Wins |
 |-----------|-------------|---------------|
 | **Bland.ai** | Generic AI phone agent platform | No persistent customer memory. Every call starts from scratch. API-first — requires developer to build. Not designed for SMBs. |
 | **Vapi** | Voice AI infrastructure / developer platform | Raw building blocks, not a product. You need engineers to build anything useful. No customer intelligence. No business dashboard. |
@@ -271,18 +271,18 @@ Even at HALF these numbers (50% of recovered calls convert, zero upsell effect),
 | **Google CCAI / Amazon Lex** | Enterprise contact center AI | Built for Fortune 500. Requires dedicated engineering team. $50K+ implementation. Overkill for SMBs. |
 | **Human answering service** | Real people answer your phone | $1-3/minute. Can't personalize at scale. Can't handle 10 simultaneous calls. No customer intelligence. $500-2,000/month for basic coverage. |
 
-### Pulse's Unfair Advantage: **Persistent Memory via GBrain**
+### hey, G!'s Unfair Advantage: **Persistent Memory via GBrain**
 
-Every competitor treats each call as a blank slate. Pulse doesn't.
+Every competitor treats each call as a blank slate. hey, G! doesn't.
 
-The 10th call is dramatically better than the 1st call. By the 50th call, Pulse knows:
+The 10th call is dramatically better than the 1st call. By the 50th call, hey, G! knows:
 - Your name, your usual order, your dietary restrictions
 - That you like extra sweet, always get oat milk, prefer cold drinks in summer
 - That you come in with your mom on Saturdays and she always gets chai
 - That you tried the lavender latte and didn't like it (won't recommend it again)
 - That your daughter has a nut allergy
 
-**This memory compounds.** The longer a business uses Pulse, the more valuable it becomes. Switching costs increase every day. No competitor has this because no competitor is built on a persistent knowledge graph architecture.
+**This memory compounds.** The longer a business uses hey, G!, the more valuable it becomes. Switching costs increase every day. No competitor has this because no competitor is built on a persistent knowledge graph architecture.
 
 ---
 
@@ -331,10 +331,10 @@ The 10th call is dramatically better than the 1st call. By the 50th call, Pulse 
 This is the long-term strategic moat:
 
 ```
-More customers call Pulse
+More customers call hey, G!
          │
          ▼
-Pulse learns more about each customer
+hey, G! learns more about each customer
          │
          ▼
 Better recommendations + personalization
@@ -353,12 +353,12 @@ Cross-business customer graph builds
 (Sarah's coffee preferences inform her experience at the bakery next door)
          │
          ▼
-Network effect: Pulse becomes more valuable for EVERY business
+Network effect: hey, G! becomes more valuable for EVERY business
 as more businesses in a community join
 ```
 
 ### Phase 2 Vision: Customer Profiles Follow the Customer
-Imagine: you're a Pulse customer at Sunrise Coffee. You walk into Sarah's Bakery next door (also on Pulse). The agent already knows you prefer oat milk and have a nut allergy — because your profile is portable across Pulse-connected businesses.
+Imagine: you're a hey, G! customer at Sunrise Coffee. You walk into Sarah's Bakery next door (also on hey, G!). The agent already knows you prefer oat milk and have a nut allergy — because your profile is portable across hey, G!-connected businesses.
 
 **This is the true moat. No single business can build it. Only a platform can.**
 
@@ -379,7 +379,7 @@ Imagine: you're a Pulse customer at Sunrise Coffee. You walk into Sarah's Bakery
 ### Go-to-Market Strategy
 1. **Vertical wedge:** Start with coffee shops + bakeries in one city (SF). High call volume, complex menus, repeat customers.
 2. **PLG motion:** Free 14-day trial. Business sees ROI in week 1 (answered calls they would have missed). Converts naturally.
-3. **Word of mouth:** SMB owners talk to each other. "Did you know I recovered $4K in sales last month from Pulse?"
+3. **Word of mouth:** SMB owners talk to each other. "Did you know I recovered $4K in sales last month from hey, G!?"
 4. **Expand verticals:** Salons → restaurants → medical/dental → legal → real estate.
 5. **Enterprise inbound:** National chains notice the SMB traction and reach out for custom deployments.
 
@@ -400,7 +400,7 @@ Imagine: you're a Pulse customer at Sunrise Coffee. You walk into Sarah's Bakery
 - ✅ Creates a new revenue channel businesses didn't have before (phone ordering at scale)
 
 ### Cons / Risks
-- ⚠️ **Vapi/voice provider dependency** — Pulse relies on Vapi (or similar) for the voice layer. Mitigated by: Vapi is one of several providers; we can switch to Bland.ai, Retell, or build our own voice stack as we scale.
+- ⚠️ **Vapi/voice provider dependency** — hey, G! relies on Vapi (or similar) for the voice layer. Mitigated by: Vapi is one of several providers; we can switch to Bland.ai, Retell, or build our own voice stack as we scale.
 - ⚠️ **SMB churn is notoriously high** — SMBs close, change priorities, cancel subscriptions. Mitigated by: if the ROI is 15-31×, churn should be well below industry average. Product becomes stickier over time as customer profiles accumulate.
 - ⚠️ **Privacy perception** — Customers may initially be uncomfortable knowing the AI "remembers" them. Mitigated by: Opt-in only. Customers call us, we don't cold-call them. Data stored locally. Transparent about what's remembered.
 - ⚠️ **Voice AI quality can vary** — Accents, background noise, complex requests can trip up voice AI. Mitigated by: graceful fallback to human ("Let me connect you with Sarah directly"), and voice quality is improving rapidly.
@@ -411,4 +411,4 @@ Imagine: you're a Pulse customer at Sunrise Coffee. You walk into Sarah's Bakery
 
 ## 10. The Pitch (One Paragraph)
 
-*Pulse is an AI voice concierge that lets any customer call any business and talk to an agent that knows the entire business AND knows them personally. It solves a universal problem: the interface between customer and business is broken — complex menus, language barriers, intimidation, and missed calls cost businesses billions. Powered by GBrain's persistent memory, Pulse gets better with every interaction — the 50th call is dramatically better than the 1st. Every business gets Fortune 500-level customer intelligence for $99/month, and every customer gets the experience of being a regular at their favorite mom-and-pop shop, everywhere they go. 36 million small businesses in America miss 62% of their calls. We answer every single one.*
+*hey, G! is an AI voice concierge that lets any customer call any business and talk to an agent that knows the entire business AND knows them personally. It solves a universal problem: the interface between customer and business is broken — complex menus, language barriers, intimidation, and missed calls cost businesses billions. Powered by GBrain's persistent memory, hey, G! gets better with every interaction — the 50th call is dramatically better than the 1st. Every business gets Fortune 500-level customer intelligence for $99/month, and every customer gets the experience of being a regular at their favorite mom-and-pop shop, everywhere they go. 36 million small businesses in America miss 62% of their calls. We answer every single one.*
