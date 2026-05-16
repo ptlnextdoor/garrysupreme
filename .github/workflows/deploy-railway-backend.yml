@@ -1,0 +1,41 @@
+name: Deploy Backend to Railway
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'yc-gbrain/server/**'
+      - 'yc-gbrain/package.json'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'railway.json'
+      - '.github/workflows/deploy-railway-backend.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+      - name: Deploy to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+          RAILWAY_ENVIRONMENT_ID: ${{ secrets.RAILWAY_ENVIRONMENT_ID }}
+        run: |
+          if [ -z "$RAILWAY_TOKEN" ]; then
+            echo "Missing RAILWAY_TOKEN secret" >&2
+            exit 1
+          fi
+          ARGS="--detach --ci"
+          if [ -n "$RAILWAY_PROJECT_ID" ]; then ARGS="$ARGS --project $RAILWAY_PROJECT_ID"; fi
+          if [ -n "$RAILWAY_SERVICE_ID" ]; then ARGS="$ARGS --service $RAILWAY_SERVICE_ID"; fi
+          if [ -n "$RAILWAY_ENVIRONMENT_ID" ]; then ARGS="$ARGS --environment $RAILWAY_ENVIRONMENT_ID"; fi
+          railway up $ARGS

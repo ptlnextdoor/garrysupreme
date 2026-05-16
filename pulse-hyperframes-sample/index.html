@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #070707;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+      }
+
+      #root {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        color: #f7f3ea;
+        background:
+          radial-gradient(circle at 18% 18%, rgba(247, 214, 165, 0.24), transparent 28%),
+          radial-gradient(circle at 82% 78%, rgba(91, 171, 255, 0.16), transparent 30%),
+          linear-gradient(135deg, #050505 0%, #17120d 44%, #08090b 100%);
+      }
+
+      .scene {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+      }
+
+      .scene-content {
+        position: relative;
+        z-index: 3;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        padding: 104px 132px;
+        gap: 34px;
+      }
+
+      .eyebrow {
+        color: #f7d6a5;
+        font-size: 28px;
+        font-weight: 800;
+        line-height: 1;
+        text-transform: uppercase;
+      }
+
+      .headline {
+        max-width: 1280px;
+        font-size: 142px;
+        font-weight: 950;
+        line-height: 0.9;
+      }
+
+      .subhead {
+        max-width: 850px;
+        color: #d8d8d8;
+        font-size: 42px;
+        font-weight: 650;
+        line-height: 1.17;
+      }
+
+      .brand-mark {
+        position: absolute;
+        top: 78px;
+        left: 92px;
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        color: #f7d6a5;
+        font-size: 34px;
+        font-weight: 950;
+      }
+
+      .brand-dot {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #f7d6a5;
+        box-shadow: 0 0 44px rgba(247, 214, 165, 0.78);
+      }
+
+      .grain {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        opacity: 0.11;
+        background-image:
+          linear-gradient(90deg, rgba(255, 255, 255, 0.18) 1px, transparent 1px),
+          linear-gradient(0deg, rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+        background-size: 42px 42px;
+      }
+
+      .sweep {
+        position: absolute;
+        top: -20%;
+        left: -18%;
+        z-index: 2;
+        width: 42%;
+        height: 150%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(247, 214, 165, 0.16),
+          rgba(255, 255, 255, 0.24),
+          transparent
+        );
+        transform: rotate(16deg);
+      }
+
+      .wave {
+        position: absolute;
+        right: 108px;
+        bottom: 108px;
+        z-index: 4;
+        display: flex;
+        align-items: flex-end;
+        gap: 12px;
+        height: 260px;
+      }
+
+      .bar {
+        width: 18px;
+        height: var(--h);
+        border-radius: 999px;
+        background: linear-gradient(180deg, #f7d6a5, #5babff);
+        box-shadow: 0 0 28px rgba(247, 214, 165, 0.32);
+        transform-origin: bottom;
+      }
+
+      .split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        align-items: stretch;
+        width: 100%;
+        height: 100%;
+        padding: 118px;
+        gap: 34px;
+      }
+
+      .brain-panel {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 0;
+        padding: 52px;
+        border: 1px solid rgba(247, 214, 165, 0.28);
+        border-radius: 8px;
+        background: rgba(12, 12, 12, 0.72);
+        box-shadow: 0 42px 120px rgba(0, 0, 0, 0.32);
+      }
+
+      .brain-panel.blue {
+        border-color: rgba(91, 171, 255, 0.35);
+      }
+
+      .panel-label {
+        color: #f7d6a5;
+        font-size: 28px;
+        font-weight: 900;
+        text-transform: uppercase;
+      }
+
+      .blue .panel-label {
+        color: #8bc7ff;
+      }
+
+      .panel-title {
+        font-size: 78px;
+        font-weight: 950;
+        line-height: 0.94;
+      }
+
+      .data-list {
+        display: grid;
+        gap: 18px;
+      }
+
+      .data-pill {
+        display: flex;
+        align-items: center;
+        min-height: 70px;
+        padding: 18px 24px;
+        border-radius: 8px;
+        color: #f1ede4;
+        font-size: 30px;
+        font-weight: 750;
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .call-stage {
+        display: grid;
+        grid-template-columns: 0.9fr 1.1fr;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+        padding: 124px;
+        gap: 72px;
+      }
+
+      .phone {
+        position: relative;
+        display: grid;
+        place-items: center;
+        width: 560px;
+        height: 560px;
+        border: 2px solid rgba(247, 214, 165, 0.34);
+        border-radius: 50%;
+        background:
+          radial-gradient(circle, rgba(247, 214, 165, 0.28), transparent 45%),
+          rgba(255, 255, 255, 0.04);
+      }
+
+      .phone-ring {
+        position: absolute;
+        inset: 54px;
+        border: 2px solid rgba(91, 171, 255, 0.44);
+        border-radius: 50%;
+      }
+
+      .phone-core {
+        display: grid;
+        place-items: center;
+        width: 260px;
+        height: 260px;
+        border-radius: 50%;
+        color: #f7d6a5;
+        font-size: 84px;
+        font-weight: 950;
+        background: #050505;
+        border: 2px solid rgba(247, 214, 165, 0.48);
+        box-shadow: 0 0 80px rgba(247, 214, 165, 0.46);
+      }
+
+      .answer {
+        display: flex;
+        flex-direction: column;
+        gap: 34px;
+      }
+
+      .quote {
+        max-width: 900px;
+        font-size: 76px;
+        font-weight: 920;
+        line-height: 0.98;
+      }
+
+      .caption {
+        max-width: 850px;
+        color: #d8d8d8;
+        font-size: 34px;
+        font-weight: 650;
+        line-height: 1.25;
+      }
+
+      .metric-row {
+        display: flex;
+        gap: 18px;
+      }
+
+      .metric {
+        width: 256px;
+        padding: 24px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .metric strong {
+        display: block;
+        color: #f7d6a5;
+        font-size: 50px;
+        line-height: 1;
+      }
+
+      .metric span {
+        display: block;
+        margin-top: 10px;
+        color: #d8d8d8;
+        font-size: 20px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .final-content {
+        align-items: center;
+        text-align: center;
+      }
+
+      .final-title {
+        max-width: 1400px;
+        font-size: 164px;
+      }
+
+      .final-line {
+        width: 980px;
+        height: 12px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #f7d6a5, #5babff, #ffffff);
+        box-shadow: 0 0 52px rgba(247, 214, 165, 0.42);
+      }
+
+      .spark {
+        position: absolute;
+        z-index: 2;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #f7d6a5;
+        box-shadow: 0 0 28px rgba(247, 214, 165, 0.9);
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="10"
+      data-width="1920"
+      data-height="1080"
+    >
+      <div class="grain" data-layout-ignore></div>
+      <div class="brand-mark" data-layout-ignore>
+        <span class="brand-dot"></span>
+        <span>Pulse</span>
+      </div>
+
+      <section id="scene-1" class="scene clip" data-start="0" data-duration="2.6" data-track-index="1">
+        <div class="sweep" data-layout-ignore></div>
+        <div class="scene-content">
+          <div class="eyebrow">AI voice agent for small businesses</div>
+          <h1 class="headline">Every call answered. Every customer remembered.</h1>
+          <p class="subhead">A customer speaks naturally. Pulse connects menu knowledge, history, and preference in real time.</p>
+        </div>
+        <div class="wave" data-layout-ignore>
+          <span class="bar" style="--h: 70px"></span>
+          <span class="bar" style="--h: 150px"></span>
+          <span class="bar" style="--h: 230px"></span>
+          <span class="bar" style="--h: 110px"></span>
+          <span class="bar" style="--h: 190px"></span>
+          <span class="bar" style="--h: 84px"></span>
+          <span class="bar" style="--h: 212px"></span>
+          <span class="bar" style="--h: 128px"></span>
+          <span class="bar" style="--h: 246px"></span>
+          <span class="bar" style="--h: 96px"></span>
+          <span class="bar" style="--h: 172px"></span>
+          <span class="bar" style="--h: 124px"></span>
+        </div>
+      </section>
+
+      <section id="scene-2" class="scene clip" data-start="2.6" data-duration="2.4" data-track-index="1">
+        <div class="split">
+          <article class="brain-panel gold">
+            <div class="panel-label">Company brain</div>
+            <h2 class="panel-title">What the business knows</h2>
+            <div class="data-list">
+              <div class="data-pill">Menu, pricing, ingredients</div>
+              <div class="data-pill">Hours, policies, specials</div>
+              <div class="data-pill">Inventory and recommendations</div>
+            </div>
+          </article>
+          <article class="brain-panel blue">
+            <div class="panel-label">Customer brain</div>
+            <h2 class="panel-title">What this person likes</h2>
+            <div class="data-list">
+              <div class="data-pill">Oat milk, cardamom, not too sweet</div>
+              <div class="data-pill">Loved coconut cold brew last week</div>
+              <div class="data-pill">Prefers simple, friendly language</div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="scene-3" class="scene clip" data-start="5" data-duration="2.7" data-track-index="1">
+        <div class="call-stage">
+          <div class="phone">
+            <div class="phone-ring"></div>
+            <div class="phone-ring second"></div>
+            <div class="phone-core">P</div>
+          </div>
+          <div class="answer">
+            <div class="eyebrow">Live recommendation</div>
+            <h2 class="quote">"I can make that iced chai with oat milk and a little cardamom."</h2>
+            <p class="caption">No menu scanning. No pressure. Just a conversation that understands the customer.</p>
+            <div class="metric-row">
+              <div class="metric"><strong>0</strong><span>missed calls</span></div>
+              <div class="metric"><strong>24/7</strong><span>available</span></div>
+              <div class="metric"><strong>1:1</strong><span>memory</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="scene-4" class="scene clip" data-start="7.7" data-duration="2.3" data-track-index="1">
+        <div class="scene-content final-content">
+          <div class="eyebrow">Pulse</div>
+          <h2 class="headline final-title">Turn every phone call into a returning customer.</h2>
+          <div class="final-line"></div>
+          <p class="subhead">Built as a HyperFrames HTML composition.</p>
+        </div>
+        <span class="spark" style="left: 260px; top: 250px"></span>
+        <span class="spark" style="left: 1540px; top: 190px"></span>
+        <span class="spark" style="left: 1450px; top: 780px"></span>
+        <span class="spark" style="left: 430px; top: 830px"></span>
+      </section>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      gsap.set(["#scene-2", "#scene-3", "#scene-4"], { autoAlpha: 0 });
+
+      tl.from(".brand-mark", { opacity: 0, y: -22, duration: 0.45, ease: "power3.out" }, 0);
+      tl.from("#scene-1 .eyebrow", { opacity: 0, y: 32, duration: 0.5, ease: "power3.out" }, 0.15);
+      tl.from("#scene-1 .headline", { opacity: 0, y: 70, duration: 0.72, ease: "power4.out" }, 0.28);
+      tl.from("#scene-1 .subhead", { opacity: 0, y: 34, duration: 0.54, ease: "power3.out" }, 0.72);
+      tl.from("#scene-1 .bar", { scaleY: 0.08, opacity: 0, duration: 0.48, stagger: 0.035, ease: "back.out(2)" }, 0.64);
+      tl.to("#scene-1 .bar", { scaleY: 0.55, duration: 0.22, yoyo: true, repeat: 7, stagger: 0.025, ease: "sine.inOut" }, 1.6);
+      tl.to("#scene-1 .sweep", { x: 2400, duration: 1.55, ease: "power2.inOut" }, 0.42);
+      tl.to("#scene-1", { autoAlpha: 0, duration: 0.35, ease: "power2.in" }, 2.25);
+      tl.set("#scene-1", { autoAlpha: 0 }, 2.6);
+
+      tl.to("#scene-2", { autoAlpha: 1, duration: 0.01 }, 2.6);
+      tl.from("#scene-2 .brain-panel", { opacity: 0, y: 78, scale: 0.96, duration: 0.58, stagger: 0.12, ease: "power3.out" }, 2.66);
+      tl.from("#scene-2 .panel-title", { opacity: 0, y: 34, duration: 0.48, stagger: 0.08, ease: "power3.out" }, 2.95);
+      tl.from("#scene-2 .data-pill", { opacity: 0, x: -28, duration: 0.32, stagger: 0.055, ease: "power2.out" }, 3.32);
+      tl.to("#scene-2 .brain-panel", { boxShadow: "0 0 90px rgba(247, 214, 165, 0.18)", duration: 0.34, yoyo: true, repeat: 1 }, 4.18);
+      tl.to("#scene-2", { autoAlpha: 0, duration: 0.35, ease: "power2.in" }, 4.65);
+      tl.set("#scene-2", { autoAlpha: 0 }, 5);
+
+      tl.to("#scene-3", { autoAlpha: 1, duration: 0.01 }, 5);
+      tl.from("#scene-3 .phone", { opacity: 0, scale: 0.72, rotation: -10, duration: 0.62, ease: "back.out(1.8)" }, 5.08);
+      tl.from("#scene-3 .phone-ring", { opacity: 0, scale: 0.42, duration: 0.8, stagger: 0.15, ease: "power2.out" }, 5.2);
+      tl.to("#scene-3 .phone-ring", { scale: 1.22, opacity: 0.18, duration: 0.6, yoyo: true, repeat: 2, stagger: 0.12, ease: "sine.inOut" }, 6.25);
+      tl.from("#scene-3 .eyebrow", { opacity: 0, y: 28, duration: 0.4, ease: "power3.out" }, 5.32);
+      tl.from("#scene-3 .quote", { opacity: 0, y: 46, duration: 0.62, ease: "power4.out" }, 5.55);
+      tl.from("#scene-3 .caption", { opacity: 0, y: 28, duration: 0.42, ease: "power3.out" }, 6.05);
+      tl.from("#scene-3 .metric", { opacity: 0, y: 32, duration: 0.36, stagger: 0.08, ease: "power3.out" }, 6.34);
+      tl.to("#scene-3", { autoAlpha: 0, duration: 0.35, ease: "power2.in" }, 7.35);
+      tl.set("#scene-3", { autoAlpha: 0 }, 7.7);
+
+      tl.to("#scene-4", { autoAlpha: 1, duration: 0.01 }, 7.7);
+      tl.from("#scene-4 .eyebrow", { opacity: 0, y: 24, duration: 0.34, ease: "power3.out" }, 7.8);
+      tl.from("#scene-4 .final-title", { opacity: 0, scale: 0.92, y: 42, duration: 0.68, ease: "power4.out" }, 7.9);
+      tl.from("#scene-4 .final-line", { scaleX: 0, transformOrigin: "center", duration: 0.56, ease: "power3.out" }, 8.48);
+      tl.from("#scene-4 .subhead", { opacity: 0, y: 26, duration: 0.4, ease: "power3.out" }, 8.86);
+      tl.from("#scene-4 .spark", { opacity: 0, scale: 0, duration: 0.36, stagger: 0.08, ease: "back.out(3)" }, 8.18);
+      tl.to("#scene-4 .spark", { y: -20, opacity: 0.42, duration: 0.7, yoyo: true, repeat: 1, stagger: 0.05, ease: "sine.inOut" }, 8.72);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>
