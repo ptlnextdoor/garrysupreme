@@ -44,9 +44,8 @@ export function Footer() {
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
             <div className="col-span-2 md:col-span-1">
-              <Link href="/" className="flex items-center gap-2 mb-4">
-                <img src="/logo.svg" alt="hey, G! logo" className="w-6 h-6" />
-                <span className="text-base font-semibold text-foreground">hey, G!</span>
+              <Link href="/" className="flex items-center mb-4">
+                <img src="/logo.svg" alt="hey, G!" className="h-8 w-auto" />
               </Link>
               <p className="text-sm text-muted-foreground mb-6">
                 The AI voice concierge with two brains: your business and your customers.
