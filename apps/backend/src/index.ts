@@ -28,6 +28,7 @@ await app.register(reviewRoute)
 await app.register(vapiWebhookRoute)
 await app.register(queriesRoute)
 
+app.get('/', async () => ({ status: 'ok', service: 'Pulse backend', ts: Date.now() }))
 app.get('/health', async () => ({ ok: true, ts: Date.now() }))
 
 await app.listen({ port: env.PORT, host: '0.0.0.0' })
