@@ -32,6 +32,7 @@ Friendly and direct. Calls on weekday mornings. Appreciates when her preferences
 6. **2026-05-16** — Cold Brew
 7. **2026-05-16** — Iced Chai Latte, oat milk
 8. **2026-05-16** — Oat Milk Latte
+9. **2026-05-16** — Oat Milk Latte, Blueberry Muffin
 
 ## Household Members
 - **Mom**: Chai Latte, oat milk, extra spiced, no modifications
