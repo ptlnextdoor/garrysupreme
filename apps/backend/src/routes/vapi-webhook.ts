@@ -6,7 +6,7 @@ import type { CustomerProfile, MenuItem, MemoryFact } from '@pulse/types'
 import { activeCalls } from './queries.js'
 import { z } from 'zod'
 
-const COMPANY_SLUG = 'sunrise-coffee'
+const COMPANY_SLUG = 'costco'
 const ANONYMOUS_PROFILE: CustomerProfile = {
   phone: 'anonymous',
   name: 'there',
@@ -50,7 +50,7 @@ async function handleGetContext(
   return {
     customer,
     company: {
-      name: 'Sunrise Coffee',
+      name: 'Costco Wholesale',
       slug: COMPANY_SLUG,
       menu: rankedMenu,
       rules: policies,
@@ -102,13 +102,25 @@ async function handleSaveOrder(
           const ok = await customers.addMemoryFact(fact)
           if (ok) hub.broadcast({ type: 'fact_pending', fact })
         }
+
+        try {
+          const { triggerIngest } = await import('@pulse/gstack')
+          await triggerIngest({
+            callId,
+            phone: normalized,
+            transcript: '',
+            order: { items: args.items, customerName: args.customer_name ?? 'Member' },
+          })
+        } catch (err) {
+          log('gstack ingest unavailable (expected if not configured)', err)
+        }
       } catch (err) {
         log('async persist failed', err)
       }
     })()
   })
 
-  return { ok: true, pickup_time: '~10 minutes' }
+  return { ok: true, pickup_time: '~2 hours for same-day pickup' }
 }
 
 const vapiWebhookRoute: FastifyPluginAsync = async (app: FastifyInstance) => {

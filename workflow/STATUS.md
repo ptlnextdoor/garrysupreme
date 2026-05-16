@@ -22,7 +22,9 @@ CEO took over Smart Coder work after 20min stall. Built:
 - /api/customers/:phone: OK
 
 ### All Issues Resolved
-ISSUE 001-010: All fixed or addressed
+ISSUE 001-012: All fixed
+- ISSUE-011: Fixed duplicate fact IDs in save-order.ts (added loop index)
+- ISSUE-012: Fixed active calls lifecycle in vapi-webhook.ts + type mismatch (startedAt: number)
 
 ### NEXT STEPS — DEPLOY
 1. Deploy backend to Railway: `railway up`
