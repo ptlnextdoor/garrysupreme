@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { Twitter, Linkedin, Instagram, Github } from "lucide-react"
+import { HeyGMark } from "./heyg-mark"
 
 const footerLinks = {
   product: [
@@ -33,7 +34,7 @@ export function Footer() {
     <div className="relative">
       <div className="absolute -top-[10vw] left-0 right-0 flex items-end justify-center overflow-visible pointer-events-none z-0">
         <h2
-          className="font-bold text-center text-[24vw] sm:text-[22vw] md:text-[20vw] lg:text-[18vw] leading-[0.85] tracking-tighter text-zinc-100 whitespace-nowrap"
+          className="font-bold italic text-center text-[24vw] sm:text-[22vw] md:text-[20vw] lg:text-[18vw] leading-[0.85] tracking-tighter text-zinc-100 whitespace-nowrap"
           style={{ fontFamily: "var(--font-playfair)" }}
         >
           hey, G!
@@ -45,7 +46,7 @@ export function Footer() {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
             <div className="col-span-2 md:col-span-1">
               <Link href="/" className="flex items-center mb-4">
-                <img src="/logo.svg" alt="hey, G!" className="h-8 w-auto" />
+                <HeyGMark className="text-xl text-foreground" />
               </Link>
               <p className="text-sm text-muted-foreground mb-6">
                 The AI voice concierge with two brains: your business and your customers.

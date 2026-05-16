@@ -1,67 +1,49 @@
 "use client"
-import { useEffect, useState } from "react"
-import { AnimatedText } from "./animated-text"
+import { useEffect, useRef } from "react"
+import { animate, onScroll, utils } from "animejs"
+import { BlurText } from "./blur-text"
 
 export function HeroSection() {
-  const [isVisible, setIsVisible] = useState(false)
-  const [scrollProgress, setScrollProgress] = useState(0)
+  const videoBoxRef = useRef<HTMLDivElement | null>(null)
+  const heroRef = useRef<HTMLDivElement | null>(null)
 
+  // Scroll-driven: video container rounds its corners; hero content floats up + fades.
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsVisible(true)
-    }, 100)
-    return () => clearTimeout(timer)
-  }, [])
+    if (!videoBoxRef.current || !heroRef.current) return
 
-  useEffect(() => {
-    let rafId: number
-    let currentProgress = 0
+    const videoAnim = animate(videoBoxRef.current, {
+      borderRadius: ["0px", "48px"],
+      ease: "linear",
+      autoplay: onScroll({
+        target: videoBoxRef.current,
+        enter: "top top",
+        leave: "bottom-=200 top",
+        sync: true,
+      }),
+    })
 
-    const handleScroll = () => {
-      const scrollY = window.scrollY
-      const maxScroll = 400
-      const targetProgress = Math.min(scrollY / maxScroll, 1)
+    const heroAnim = animate(heroRef.current, {
+      translateY: [0, -160],
+      opacity: [1, 0],
+      ease: "linear",
+      autoplay: onScroll({
+        target: videoBoxRef.current,
+        enter: "top top",
+        leave: "bottom-=200 top",
+        sync: true,
+      }),
+    })
 
-      const smoothUpdate = () => {
-        currentProgress += (targetProgress - currentProgress) * 0.1
-
-        if (Math.abs(targetProgress - currentProgress) > 0.001) {
-          setScrollProgress(currentProgress)
-          rafId = requestAnimationFrame(smoothUpdate)
-        } else {
-          setScrollProgress(targetProgress)
-        }
-      }
-
-      cancelAnimationFrame(rafId)
-      smoothUpdate()
-    }
-
-    window.addEventListener("scroll", handleScroll, { passive: true })
     return () => {
-      window.removeEventListener("scroll", handleScroll)
-      cancelAnimationFrame(rafId)
+      utils.remove(videoAnim)
+      utils.remove(heroAnim)
     }
   }, [])
-
-  const easeOutQuad = (t: number) => t * (2 - t)
-  const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3)
-
-  const scale = 1 - easeOutQuad(scrollProgress) * 0.15
-  const borderRadius = easeOutCubic(scrollProgress) * 48
-  const heightVh = 100 - easeOutQuad(scrollProgress) * 37.5
 
   return (
-    <section className="pt-32 pb-12 px-6 min-h-screen flex items-center relative overflow-hidden">
-      <div className="absolute inset-0 top-0">
-        <div
-          className="w-full will-change-transform overflow-hidden"
-          style={{
-            transform: `scale(${scale})`,
-            borderRadius: `${borderRadius}px`,
-            height: `${heightVh}vh`,
-          }}
-        >
+    <section className="pt-28 min-h-screen relative">
+      <div className="absolute inset-0 top-0 pointer-events-none">
+        <div ref={videoBoxRef} className="w-full h-full overflow-hidden will-change-transform">
           <video
             autoPlay
             loop
@@ -70,55 +52,31 @@ export function HeroSection() {
             className="w-full h-full object-cover"
             src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/af7687fd-f2ad-4f2a-96f0-b56fa7d3769c-08wERpo5U1sktxs1vcRsJW9ueslNZv.mp4"
           />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/25 to-black/55" />
         </div>
       </div>
 
       <div
-        className="absolute bottom-0 left-0 right-0 w-full overflow-hidden pointer-events-none z-[5] flex items-end justify-center"
-        style={{
-          transform: `translateY(${scrollProgress * 150}px)`,
-          opacity: 1 - scrollProgress * 0.8,
-          height: "100%",
-        }}
+        ref={heroRef}
+        className="relative z-10 min-h-[calc(100vh-7rem)] flex items-center justify-center px-6 will-change-transform"
       >
-        <span
-          className="block text-white font-bold text-[24vw] sm:text-[22vw] md:text-[20vw] lg:text-[18vw] tracking-tighter select-none text-center leading-none"
-          style={{ marginBottom: "0", fontFamily: "var(--font-playfair)" }}
-        >
-          hey, G!
-        </span>
-      </div>
-
-      <div className="max-w-7xl mx-auto w-full relative z-10">
-        <div className="text-center mb-12">
-          <div
-            className={`transition-all duration-1000 delay-[800ms] ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
-            }`}
-          >
-            <h1
-              className="text-[2.75rem] sm:text-[3.5rem] md:text-[4.25rem] lg:text-[5rem] xl:text-[5.75rem] font-normal leading-tight mb-6 w-full px-4 max-w-5xl mx-auto text-balance text-white"
-              style={{ fontFamily: "var(--font-playfair)" }}
-            >
-              <AnimatedText
-                text="An AI voice concierge that knows your business — and every customer who calls."
-                delay={0.3}
-              />
-            </h1>
-          </div>
-        </div>
-
-        <div className="flex flex-col items-center justify-center gap-8">
-          <div className="relative">
-            <div
-              className={`relative w-[234px] md:w-[281px] lg:w-[351px] will-change-transform transition-all duration-[1500ms] ease-out delay-500 ${
-                isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-[400px]"
-              }`}
-            >
-              <img src="/images/iphone-frame.png" alt="hey, G! on a phone" className="w-full h-auto relative z-10" />
-            </div>
-          </div>
-        </div>
+        <BlurText
+          text="Answer every call. Remember every customer. In their language, at their pace."
+          animateBy="words"
+          delay={140}
+          stepDuration={0.45}
+          direction="top"
+          className="max-w-5xl text-center text-white font-normal justify-center"
+          style={{
+            fontFamily: "var(--font-playfair)",
+            fontStyle: "italic",
+            fontWeight: 500,
+            letterSpacing: "-0.025em",
+            lineHeight: 1.05,
+            fontSize: "clamp(2.5rem, 6.5vw, 6rem)",
+            textShadow: "0 6px 28px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.4)",
+          }}
+        />
       </div>
     </section>
   )

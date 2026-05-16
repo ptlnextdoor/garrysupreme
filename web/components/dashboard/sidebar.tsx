@@ -2,8 +2,10 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, PhoneCall, Users, Sparkles, Network, ArrowLeft } from "lucide-react"
+import { LayoutDashboard, PhoneCall, Users, Sparkles, Network, ArrowLeft, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { HeyGMark } from "@/components/heyg-mark"
+import { TransitionLink } from "@/components/transition-link"
 
 const nav = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
@@ -11,6 +13,7 @@ const nav = [
   { href: "/dashboard/customers", label: "Customers", icon: Users },
   { href: "/dashboard/insights", label: "Insights", icon: Sparkles },
   { href: "/dashboard/gbrain", label: "GBrain", icon: Network },
+  { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ]
 
 export function DashboardSidebar() {
@@ -20,7 +23,7 @@ export function DashboardSidebar() {
     <aside className="hidden md:flex md:flex-col w-60 shrink-0 border-r border-border bg-card h-screen sticky top-0">
       <div className="px-5 py-5 border-b border-border">
         <Link href="/" className="flex items-center">
-          <img src="/logo.svg" alt="hey, G!" className="h-9 w-auto" />
+          <HeyGMark className="text-xl text-foreground heyg-logo-shared" />
         </Link>
       </div>
 
@@ -55,13 +58,13 @@ export function DashboardSidebar() {
       </nav>
 
       <div className="px-3 py-4 border-t border-border">
-        <Link
+        <TransitionLink
           href="/"
           className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to site
-        </Link>
+        </TransitionLink>
       </div>
     </aside>
   )

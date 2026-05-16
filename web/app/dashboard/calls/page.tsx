@@ -32,16 +32,6 @@ export default function CallsPage() {
     <>
       <DashboardTopbar title="Live Calls" subtitle="Every call answered, every transcript saved." />
       <div className="p-6 lg:p-10 space-y-4 max-w-5xl">
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <span className="inline-flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> 1 active
-          </span>
-          <span>·</span>
-          <span>{calls.filter((c) => c.status === "completed").length} completed today</span>
-          <span>·</span>
-          <span>{calls.filter((c) => c.status === "escalated").length} escalated</span>
-        </div>
-
         <Card>
           <CardContent className="p-0 divide-y divide-border">
             {calls.map((c) => (

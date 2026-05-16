@@ -4,6 +4,8 @@ import type React from "react"
 import Link from "next/link"
 import { useState } from "react"
 import { Menu, X, ArrowUpRight, ArrowRight } from "lucide-react"
+import { HeyGMark } from "./heyg-mark"
+import { TransitionLink } from "./transition-link"
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false)
@@ -45,7 +47,7 @@ export function Header() {
       >
         <div className="flex items-center justify-between">
           <a href="#" onClick={handleLogoClick} className="flex items-center cursor-pointer">
-            <img src="/logo.svg" alt="hey, G!" className="h-9 w-auto" />
+            <HeyGMark className="text-xl text-black heyg-logo-shared" />
           </a>
 
           <nav className="hidden md:flex items-center gap-8">
@@ -85,18 +87,18 @@ export function Header() {
             >
               FAQ
             </a>
-            <Link
+            <TransitionLink
               href="/dashboard"
               className={`text-sm transition-colors cursor-pointer ${
                 isScrolled ? "text-zinc-600 hover:text-black" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Dashboard
-            </Link>
+            </TransitionLink>
           </nav>
 
           <div className="hidden md:flex items-center gap-1">
-            <Link
+            <TransitionLink
               href="/dashboard"
               className={`relative flex items-center gap-0 border rounded-full pl-5 pr-1 py-1 transition-all duration-300 group overflow-hidden ${
                 isScrolled ? "border-zinc-300" : "border-border"
@@ -126,7 +128,7 @@ export function Header() {
                   }`}
                 />
               </span>
-            </Link>
+            </TransitionLink>
           </div>
 
           <button
@@ -156,9 +158,9 @@ export function Header() {
             <a href="#faq" onClick={(e) => handleSmoothScroll(e, "faq")} className="text-zinc-600">
               FAQ
             </a>
-            <Link href="/dashboard" className="text-zinc-600">
+            <TransitionLink href="/dashboard" className="text-zinc-600">
               Dashboard
-            </Link>
+            </TransitionLink>
           </nav>
         )}
       </div>

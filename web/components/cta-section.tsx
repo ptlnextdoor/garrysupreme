@@ -1,5 +1,5 @@
-import Link from "next/link"
 import { ArrowUpRight, ArrowRight } from "lucide-react"
+import { TransitionLink } from "./transition-link"
 
 export function CTASection() {
   return (
@@ -32,7 +32,7 @@ export function CTASection() {
             </span>
           </button>
 
-          <Link
+          <TransitionLink
             href="/dashboard"
             className="relative flex items-center justify-center gap-0 border border-border rounded-full pl-6 pr-1.5 py-1.5 transition-all duration-300 group overflow-hidden"
           >
@@ -44,7 +44,7 @@ export function CTASection() {
               <ArrowRight className="w-4 h-4 text-foreground group-hover:opacity-0 absolute transition-opacity duration-300" />
               <ArrowUpRight className="w-4 h-4 text-foreground group-hover:text-background opacity-0 group-hover:opacity-100 transition-all duration-300" />
             </span>
-          </Link>
+          </TransitionLink>
         </div>
       </div>
     </section>
