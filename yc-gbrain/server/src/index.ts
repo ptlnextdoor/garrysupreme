@@ -2,7 +2,7 @@ import cors from "@fastify/cors";
 import websocket from "@fastify/websocket";
 import Fastify, { type FastifyRequest } from "fastify";
 import { z, ZodError } from "zod";
-import { approveMemory, endDemoCall, getContext, getDashboard, learnPreference, rejectMemory, resetDemo, saveOrder, startDemoCall } from "./store.js";
+import { approveMemory, endDemoCall, getContext, getDashboard, learnPreference, listCompanies, recordVapiLifecycle, rejectMemory, resetDemo, saveOrder, searchCompanyCatalog, startDemoCall } from "./store.js";
 import { extractToolArguments, vapiToolResponse } from "./vapi.js";
 
 const app = Fastify({
@@ -60,6 +60,7 @@ app.get("/ws", { websocket: true }, (connection) => {
 });
 
 app.get("/api/dashboard", async () => getDashboard());
+app.get("/api/companies", async () => listCompanies());
 app.get("/api/calls/active", async () => {
   const dashboard = await getDashboard();
   return dashboard.activeCalls;
@@ -77,15 +78,19 @@ app.post("/api/context", async (request) => {
   requireDemoToken(request);
   const args = extractToolArguments(request.body);
   const schema = z.object({
+    company_id: z.string().optional().default("costco"),
     phone_number: z.string().optional().default("unknown"),
-    request: z.string().optional().default("")
+    request: z.string().optional().default(""),
+    language: z.enum(["en", "hi"]).optional().default("en")
   });
   const parsed = schema.parse(args);
-  const result = await getContext(parsed.phone_number, parsed.request);
+  const result = await getContext(parsed.company_id, parsed.phone_number, parsed.request, parsed.language);
 
   broadcast("context_loaded", {
+    company: result.company.name,
     customer: result.customer.name,
-    request: parsed.request
+    request: parsed.request,
+    language: parsed.language
   });
   broadcast("dashboard_updated", await getDashboard());
 
@@ -96,11 +101,13 @@ app.post("/api/save_order", async (request) => {
   requireDemoToken(request);
   const args = extractToolArguments(request.body);
   const schema = z.object({
+    company_id: z.string().optional().default("costco"),
     customer_name: z.string().optional(),
     phone_number: z.string().optional(),
     items: z.array(z.string()).min(1),
     new_preferences: z.array(z.string()).default([]),
-    confidence: z.number().optional()
+    confidence: z.number().optional(),
+    language: z.enum(["en", "hi"]).optional().default("en")
   });
   const parsed = schema.parse(args);
   const order = await saveOrder(parsed);
@@ -115,15 +122,35 @@ app.post("/api/learn", async (request) => {
   requireDemoToken(request);
   const args = extractToolArguments(request.body);
   const schema = z.object({
+    company_id: z.string().optional().default("costco"),
     customer_name: z.string().default("unknown customer"),
     preference: z.string(),
     confidence: z.number().default(0.65)
   });
   const parsed = schema.parse(args);
-  const memory = await learnPreference(parsed.customer_name, parsed.preference, parsed.confidence);
+  const memory = await learnPreference(parsed.customer_name, parsed.preference, parsed.confidence, parsed.company_id);
   broadcast("memory_learned", memory);
   broadcast("dashboard_updated", await getDashboard());
   return { ok: true, memory };
+});
+
+app.post("/api/search", async (request) => {
+  requireDemoToken(request);
+  const args = extractToolArguments(request.body);
+  const schema = z.object({
+    company_id: z.string().optional().default("costco"),
+    query: z.string().min(1),
+    customer_id: z.string().optional()
+  });
+  const parsed = schema.parse(args);
+  const result = await searchCompanyCatalog(parsed.company_id, parsed.query, parsed.customer_id);
+  broadcast("catalog_searched", {
+    company: result.company_id,
+    query: parsed.query,
+    decision: result.decision
+  });
+  broadcast("dashboard_updated", await getDashboard());
+  return result;
 });
 
 app.post("/api/memory/approve", async (request, reply) => {
@@ -150,7 +177,8 @@ app.post("/api/memory/reject", async (request, reply) => {
 
 app.post("/api/demo/start_call", async (request) => {
   requireDemoToken(request);
-  const call = await startDemoCall();
+  const args = extractToolArguments(request.body);
+  const call = await startDemoCall(args.company_id);
   broadcast("demo_call_started", call);
   broadcast("dashboard_updated", await getDashboard());
   return { ok: true, call };
@@ -158,7 +186,8 @@ app.post("/api/demo/start_call", async (request) => {
 
 app.post("/api/demo/end_call", async (request) => {
   requireDemoToken(request);
-  const call = await endDemoCall();
+  const args = extractToolArguments(request.body);
+  const call = await endDemoCall(args.company_id);
   broadcast("demo_call_ended", call);
   broadcast("dashboard_updated", await getDashboard());
   return { ok: true, call };
@@ -166,7 +195,8 @@ app.post("/api/demo/end_call", async (request) => {
 
 app.post("/api/demo/reset", async (request) => {
   requireDemoToken(request);
-  const dashboard = await resetDemo();
+  const args = extractToolArguments(request.body);
+  const dashboard = await resetDemo(args.company_id);
   broadcast("demo_reset", dashboard);
   broadcast("dashboard_updated", dashboard);
   return { ok: true, dashboard };
@@ -176,14 +206,25 @@ app.post("/api/vapi/webhook", async (request) => {
   requireDemoToken(request);
   const body = request.body as Record<string, unknown>;
   const message = typeof body.message === "object" && body.message !== null ? body.message as Record<string, unknown> : {};
+  const call = typeof message.call === "object" && message.call !== null
+    ? message.call as Record<string, unknown>
+    : typeof body.call === "object" && body.call !== null
+      ? body.call as Record<string, unknown>
+      : {};
+  const customer = typeof call.customer === "object" && call.customer !== null ? call.customer as Record<string, unknown> : {};
   const event = String(body.type ?? body.event ?? message.type ?? "unknown");
+  const companyId = body.company_id ?? message.company_id ?? "costco";
+  const lifecycleCall = await recordVapiLifecycle({
+    event,
+    company_id: companyId,
+    call_id: typeof call.id === "string" ? call.id : undefined,
+    phone_number: typeof customer.number === "string" ? customer.number : undefined,
+    customer_name: typeof body.customer_name === "string" ? body.customer_name : undefined
+  });
 
-  if (event.includes("call-start")) await startDemoCall();
-  if (event.includes("end")) await endDemoCall();
-
-  broadcast("vapi_webhook", { event, body });
+  broadcast("vapi_webhook", { event, call: lifecycleCall });
   broadcast("dashboard_updated", await getDashboard());
-  return { ok: true };
+  return { ok: true, handled_lifecycle: Boolean(lifecycleCall), call: lifecycleCall };
 });
 
 const port = Number(process.env.PORT ?? 3001);
