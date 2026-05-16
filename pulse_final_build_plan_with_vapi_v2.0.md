@@ -11,7 +11,7 @@ A live phone number that any customer can call to talk to a business. The AI age
 
 - **Knows the business** — full menu, ingredients, policies, what's in stock
 - **Knows the customer** — preferences, history, dietary needs, language, communication style
-- **Learns in real-time** — every call makes the next call better
+- **Learns in real-time** — every call enriches the Customer Brain and makes that customer's next call better
 - **Handles parallel calls** — Sarah's bakery never misses a call again
 
 The dashboard shows the business owner their customers, live calls, and insights they've never had access to before.
@@ -22,15 +22,30 @@ The dashboard shows the business owner their customers, live calls, and insights
 
 Pulse is not just an AI phone bot.
 
-Voice AI answers the phone. Pulse gives the business memory.
+Voice AI answers the phone. Pulse gives every customer a memory layer and gives the business a trustworthy source of truth plus reviewable insights.
 
 Every business gets:
 
-1. **Company Brain** — everything the business knows
-2. **Customer Brain** — everything the business has learned about each customer
+1. **Company Brain** — everything the business knows; business-owned and not silently rewritten by customer calls
+2. **Customer Brain** — everything the business has learned about each customer; enriched after every interaction
 3. **Session Brain** — what the customer wants right now
 
 The agent merges all three in real time, then makes safe, personalized recommendations.
+
+## Brain Evolution Rules
+
+The Customer Brain should evolve on every interaction. After each call, Pulse should save a richer customer context: confirmed order, explicit preferences, rejected suggestions, dietary needs or allergies the customer volunteered, communication style, language preference, household notes, evidence quotes, confidence, and timestamps.
+
+The Company Brain should not evolve from a single customer's call by default. Customer conversations can create candidate insights, but business facts stay under business control. Menu items, pricing, policies, hours, allergen claims, stock rules, and operating procedures only change through owner edits, trusted integrations like POS/inventory, admin review, or approved aggregate insights.
+
+Default write behavior:
+
+```txt
+Individual call → update Customer Brain
+Individual call → create candidate insight if useful
+Individual call → do not rewrite Company Brain
+Approved owner/admin action → update Company Brain
+```
 
 ---
 
@@ -55,7 +70,7 @@ Customer calls ──► Vapi.ai (voice) ──► Pulse Backend (Fastify)
                               Vapi speaks ──► Customer hears
                                             │
                                             ▼
-                              Profile updated in real-time
+                              Customer Brain updated in real-time
                                             │
                                             ▼
                               Dashboard updates (WebSocket)
@@ -325,9 +340,11 @@ YOU HAVE THREE SOURCES OF CONTEXT:
 
 1. COMPANY BRAIN:
 You know the menu, ingredients, allergens, prices, stock status, policies, hours, seasonal items, and popular combinations.
+This is the business-owned source of truth. Do not change it based on a customer's call.
 
 2. CUSTOMER BRAIN:
 If this is a returning customer, you know their order history, taste preferences, dietary needs, language preference, and communication style.
+This brain gets richer after every call through evidence-backed memories.
 
 3. SESSION BRAIN:
 You track what the customer wants right now. Today's request beats old preferences.
@@ -353,7 +370,9 @@ MEMORY RULES:
 - If a memory is low confidence, ask naturally.
 - Keep household members separate.
 - Never invent order history.
-- After the call, summarize learned preferences with evidence and confidence.
+- After the call, summarize learned customer preferences with evidence and confidence.
+- Write learned facts to the Customer Brain by default.
+- Do not rewrite the Company Brain from customer conversation. If the call suggests a business-level change, create a candidate insight for owner review.
 
 AFTER ORDER CONFIRMATION:
 Call save_order with:
@@ -624,6 +643,8 @@ By hour 4, phone call should hit backend.
   - household note
 - [ ] Add confidence score
 - [ ] Add memory evidence quote
+- [ ] Update Customer Brain after every completed call
+- [ ] Keep Company Brain writes behind owner/admin approval
 - [ ] Add analytics endpoint
 
 Gate:
@@ -792,6 +813,8 @@ Play backup video, then show local dashboard.
 
 ## Company Brain
 
+Business-owned source of truth. In the demo, live calls should read this file but should not mutate it.
+
 ```md
 # Sunrise Coffee
 
@@ -815,6 +838,8 @@ Modifiers: vanilla, caramel drizzle, oat milk
 ```
 
 ## Customer Brain
+
+Customer-specific memory. In the demo, every completed call should append or update evidence-backed facts here.
 
 ```md
 # Aayushya
@@ -959,7 +984,7 @@ allergen uncertainty → human handoff
 |---|---|
 | How is this different from a chatbot? | Chatbots know FAQs. Pulse knows the business and the customer. Your 10th call is better than your 1st because the Customer Brain compounds. |
 | Why wouldn't Starbucks build this? | They might for themselves. But millions of small businesses cannot build voice agents, memory graphs, and dashboards. Pulse is the Shopify of customer conversations. |
-| What's the GBrain integration? | GBrain is the persistence layer. Company Brain and Customer Brain are durable knowledge items. Every call writes new memory facts with evidence and confidence. |
+| What's the GBrain integration? | GBrain is the persistence layer. Company Brain and Customer Brain are durable knowledge items. Every call writes new Customer Brain memory facts with evidence and confidence. Company Brain changes only through owner edits, trusted integrations, admin review, or approved aggregate insights. |
 | What about privacy? | Memory is transparent and reviewable. Customers can ask what Pulse remembers, and businesses can approve or reject memories. Cross-business sharing is future-only and opt-in. |
 | What's your go-to-market? | Start with coffee shops and bakeries. High repeat customers, complex menus, and phone orders. Then expand to salons, restaurants, medical offices, and local services. |
 | Revenue model? | Start around $99/month for small cafés, $249/month for higher volume, and $499/month for multi-agent analytics. Price by included minutes, not fake unlimited calls. |
