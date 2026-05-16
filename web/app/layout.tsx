@@ -13,7 +13,6 @@ export const metadata: Metadata = {
   title: "hey, G! — AI voice concierge for small business",
   description:
     "What if every business could talk to every customer — simultaneously, in their language, remembering everything?",
-  generator: "v0.app",
 }
 
 export default function RootLayout({

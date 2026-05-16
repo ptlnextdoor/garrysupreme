@@ -31,7 +31,7 @@ export function SidebarContents({ onNavigate }: { onNavigate?: () => void }) {
           Workspace
         </div>
         <div className="px-2 py-2 rounded-lg bg-muted/60">
-          <div className="text-sm font-medium">Sarah's Bakery</div>
+          <div className="text-sm font-medium">Sarah&apos;s Bakery</div>
           <div className="text-xs text-muted-foreground">Mission, San Francisco</div>
         </div>
       </div>

@@ -56,7 +56,7 @@ export default function InsightsPage() {
 
         <Card className="bg-muted/40 border-dashed">
           <CardContent className="p-6 text-base text-muted-foreground">
-            Insights regenerate every night during the GBrain "dream cycle" — patterns are surfaced from the past 7
+            Insights regenerate every night during the GBrain &ldquo;dream cycle&rdquo; — patterns are surfaced from the past 7
             days of call transcripts.
           </CardContent>
         </Card>

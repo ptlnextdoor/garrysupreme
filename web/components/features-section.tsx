@@ -77,7 +77,7 @@ export function FeaturesSection() {
             <div className="text-xs uppercase tracking-[0.18em] text-primary mb-2">Company Brain</div>
             <h3 className="text-xl font-medium mb-3">Everything the business knows</h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Menu items, ingredients, allergens, pricing, policies, seasonal specials, what's in stock, popular
+              Menu items, ingredients, allergens, pricing, policies, seasonal specials, what&apos;s in stock, popular
               combinations, operating hours. Stored as markdown files the owner can read and edit.
             </p>
             <div className="mt-5 grid grid-cols-2 gap-2 text-[11px] font-mono text-muted-foreground">
@@ -96,7 +96,7 @@ export function FeaturesSection() {
             className="rounded-3xl border border-border bg-card p-7"
           >
             <div className="text-xs uppercase tracking-[0.18em] text-primary mb-2">Customer Brain</div>
-            <h3 className="text-xl font-medium mb-3">Everything we've learned about this caller</h3>
+            <h3 className="text-xl font-medium mb-3">Everything we&apos;ve learned about this caller</h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Order history, taste preferences, dietary needs, communication style, language, family context. Updated
               automatically after every interaction. Compounds over time.

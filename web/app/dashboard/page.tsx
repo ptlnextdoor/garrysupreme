@@ -142,7 +142,7 @@ export default function DashboardOverviewPage() {
           <Card className="p-2">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg flex items-center gap-2">
-                <Sparkle className="w-4 h-4 text-primary" weight="fill" /> This week's wins
+                <Sparkle className="w-4 h-4 text-primary" weight="fill" /> This week&apos;s wins
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">

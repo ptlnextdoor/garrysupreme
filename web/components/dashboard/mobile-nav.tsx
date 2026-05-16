@@ -1,7 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { usePathname } from "next/navigation"
+import { useState } from "react"
 import { List } from "@phosphor-icons/react/dist/ssr"
 import {
   Sheet,
@@ -14,11 +13,6 @@ import { SidebarContents } from "@/components/dashboard/sidebar"
 
 export function MobileNav() {
   const [open, setOpen] = useState(false)
-  const pathname = usePathname()
-
-  useEffect(() => {
-    setOpen(false)
-  }, [pathname])
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
