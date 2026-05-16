@@ -1,0 +1,16 @@
+{
+  "name": "pulse-demo-workspace",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n api,dashboard -c green,yellow \"npm --workspace @pulse/server run dev\" \"npm --workspace @pulse/dashboard run dev\"",
+    "build": "npm --workspace @pulse/server run build && npm --workspace @pulse/dashboard run build",
+    "typecheck": "npm --workspace @pulse/server run typecheck && npm --workspace @pulse/dashboard run typecheck"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "workspaces": [
+    "yc-gbrain/server",
+    "yc-gbrain/dashboard"
+  ]
+}
