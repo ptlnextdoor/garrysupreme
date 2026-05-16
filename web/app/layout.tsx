@@ -10,7 +10,10 @@ const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono"
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" })
 
 export const metadata: Metadata = {
-  title: "hey, G! — AI voice concierge for small business",
+  title: {
+    default: "hey, G!",
+    template: "%s · hey, G!",
+  },
   description:
     "What if every business could talk to every customer — simultaneously, in their language, remembering everything?",
 }

@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>hey, G! — opening</title>
+<meta name="viewport" content="width=1920, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: oklch(0 0 0);
+    --fg: oklch(0.97 0.005 80);
+    --muted: oklch(0.55 0.01 80);
+    --dim: oklch(0.35 0.008 80);
+    --primary: oklch(0.62 0.19 25);
+    --primary-soft: oklch(0.62 0.19 25 / 0.22);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 1920px;
+    height: 1080px;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "Inter", system-ui, sans-serif;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: geometricPrecision;
+  }
+  #stage {
+    position: relative;
+    width: 1920px;
+    height: 1080px;
+    overflow: hidden;
+  }
+  #irid {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.12;
+    pointer-events: none;
+  }
+  #vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 0%, transparent 35%, rgba(0,0,0,0.85) 100%);
+    pointer-events: none;
+  }
+  #blackout {
+    position: absolute;
+    inset: 0;
+    background: #000;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 50;
+  }
+  .scene {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    will-change: opacity, transform;
+  }
+  /* Scene 1 — wordmark */
+  .wordmark {
+    font-family: "Playfair Display", serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 220px;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    color: var(--fg);
+    display: inline-flex;
+    align-items: baseline;
+  }
+  .wordmark .ch {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(40px);
+    will-change: opacity, transform;
+  }
+  .wordmark .bang {
+    display: inline-block;
+    color: var(--primary);
+    margin-left: 2px;
+    transform: scale(0);
+    transform-origin: 50% 75%;
+    text-shadow: 0 0 60px var(--primary-soft);
+    will-change: transform;
+  }
+  .tagline {
+    margin-top: 36px;
+    font-family: "Inter", sans-serif;
+    font-weight: 300;
+    font-size: 26px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    opacity: 0;
+  }
+  /* Scene 2/3 — big stat */
+  .stat-wrap { text-align: center; }
+  .stat-big {
+    font-family: "Playfair Display", serif;
+    font-weight: 500;
+    font-size: 360px;
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    color: var(--fg);
+  }
+  .stat-big .accent {
+    color: var(--primary);
+  }
+  .stat-sub {
+    margin-top: 28px;
+    font-family: "Inter", sans-serif;
+    font-weight: 400;
+    font-size: 34px;
+    letter-spacing: 0.01em;
+    color: var(--muted);
+  }
+  .stat-foot {
+    margin-top: 18px;
+    font-family: "JetBrains Mono", "Geist Mono", monospace;
+    font-weight: 400;
+    font-size: 18px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+  /* Scene 4 — solution lines */
+  .lines {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .line {
+    font-family: "Playfair Display", serif;
+    font-weight: 400;
+    font-style: italic;
+    font-size: 96px;
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+    opacity: 0;
+    transform: translateY(24px);
+    color: var(--fg);
+  }
+  .line .hl {
+    color: var(--primary);
+    font-style: italic;
+  }
+  /* Scene 5 — handoff */
+  .handoff-mark {
+    font-family: "Playfair Display", serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 160px;
+    letter-spacing: -0.02em;
+    color: var(--fg);
+  }
+  .handoff-mark .bang {
+    color: var(--primary);
+    margin-left: 2px;
+    text-shadow: 0 0 60px var(--primary-soft);
+  }
+  .handoff-cue {
+    margin-top: 56px;
+    font-family: "Playfair Display", serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 56px;
+    letter-spacing: -0.01em;
+    line-height: 1;
+    color: var(--primary);
+    opacity: 0;
+    text-shadow: 0 0 60px var(--primary-soft);
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="irid"></canvas>
+  <div id="vignette"></div>
+  <div id="blackout"></div>
+
+  <!-- Scene 1: wordmark intro -->
+  <div class="scene" id="scene1">
+    <div class="wordmark" id="wordmark1">
+      <span class="ch">h</span><span class="ch">e</span><span class="ch">y</span><span class="ch">,</span><span class="ch">&nbsp;</span><span class="ch">G</span><span class="bang">!</span>
+    </div>
+    <div class="tagline" id="tagline1">AI voice concierge</div>
+  </div>
+
+  <!-- Scene 2: 62% -->
+  <div class="scene" id="scene2">
+    <div class="stat-wrap">
+      <div class="stat-big"><span id="pct">62</span><span class="accent">%</span></div>
+      <div class="stat-sub">of calls to small businesses go unanswered.</div>
+    </div>
+  </div>
+
+  <!-- Scene 3: $126,000 -->
+  <div class="scene" id="scene3">
+    <div class="stat-wrap">
+      <div class="stat-big"><span class="accent">$</span><span id="dollars">126,000</span></div>
+      <div class="stat-sub">lost per business, every year.</div>
+      <div class="stat-foot">25M+ customers excluded by language barriers</div>
+    </div>
+  </div>
+
+  <!-- Scene 4: solution lines -->
+  <div class="scene" id="scene4">
+    <div class="lines">
+      <div class="line" id="line1">Answer <span class="hl">every</span> call.</div>
+      <div class="line" id="line2">Remember <span class="hl">every</span> customer.</div>
+      <div class="line" id="line3">In <span class="hl">their</span> language. At <span class="hl">their</span> pace.</div>
+    </div>
+  </div>
+
+  <!-- Scene 5: handoff -->
+  <div class="scene" id="scene5">
+    <div class="handoff-mark">hey, G<span class="bang">!</span></div>
+  </div>
+</div>
+
+<script type="module">
+  import { Renderer, Program, Mesh, Triangle } from "https://esm.sh/ogl@1.0.11";
+
+  // --- Iridescent background (fragment shader copied verbatim from web/components/iridescence.tsx) ---
+  const canvas = document.getElementById("irid");
+  const renderer = new Renderer({ canvas, width: 1920, height: 1080, dpr: 1, alpha: false });
+  const gl = renderer.gl;
+  gl.clearColor(0, 0, 0, 1);
+
+  const vertex = `
+    attribute vec2 uv;
+    attribute vec2 position;
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = vec4(position, 0, 1);
+    }
+  `;
+  const fragment = `
+    precision highp float;
+    uniform float uTime;
+    uniform vec3 uColor;
+    uniform vec3 uResolution;
+    uniform vec2 uMouse;
+    uniform float uAmplitude;
+    uniform float uSpeed;
+    varying vec2 vUv;
+    void main() {
+      float mr = min(uResolution.x, uResolution.y);
+      vec2 uv = (vUv.xy * 2.0 - 1.0) * uResolution.xy / mr;
+      uv += (uMouse - vec2(0.5)) * uAmplitude;
+      float d = -uTime * 0.5 * uSpeed;
+      float a = 0.0;
+      for (float i = 0.0; i < 8.0; ++i) {
+        a += cos(i - d - a * uv.x);
+        d += sin(uv.y * i + a);
+      }
+      d += uTime * 0.5 * uSpeed;
+      vec3 col = vec3(cos(uv * vec2(d, a)) * 0.6 + 0.4, cos(a + d) * 0.5 + 0.5);
+      col = cos(col * cos(vec3(d, a, 2.5)) * 0.5 + 0.5);
+      float lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
+      gl_FragColor = vec4(vec3(lum) * uColor, 1.0);
+    }
+  `;
+  const geometry = new Triangle(gl);
+  const program = new Program(gl, {
+    vertex,
+    fragment,
+    uniforms: {
+      uTime: { value: 0 },
+      // Warm-red tint to echo --primary (oklch 0.62 0.19 25)
+      uColor: { value: [1.0, 0.55, 0.45] },
+      uResolution: { value: [1920, 1080, 1920 / 1080] },
+      uMouse: { value: [0.5, 0.5] },
+      uAmplitude: { value: 0.05 },
+      uSpeed: { value: 0.6 },
+    },
+  });
+  const mesh = new Mesh(gl, { geometry, program });
+  renderer.setSize(1920, 1080);
+
+  function drawIrid(t) {
+    program.uniforms.uTime.value = t;
+    renderer.render({ scene: mesh });
+  }
+
+  // --- Helpers ---
+  const $ = (id) => document.getElementById(id);
+  const easeOutCubic = (x) => 1 - Math.pow(1 - x, 3);
+  const easeInCubic = (x) => x * x * x;
+  const easeInOut = (x) => x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
+  const clamp01 = (x) => Math.max(0, Math.min(1, x));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  function fmtDollars(n) {
+    return Math.round(n).toLocaleString("en-US");
+  }
+
+  const chars1 = document.querySelectorAll("#wordmark1 .ch");
+  const bang1 = document.querySelector("#wordmark1 .bang");
+
+  // --- Scenes ---
+  // Each scene: { start, end, render(localT, sceneSeconds) }
+  const TIMELINE = [
+    // Scene 1: 0.0 -> 4.0 (reveal 0..2.5, hold 2.5..3.2, unreveal 3.2..4.0)
+    {
+      start: 0.0, end: 4.0,
+      el: $("scene1"),
+      render(lt, secs) {
+        const dur = 4.0;
+        const t = lt; // 0..1
+        // Stagger letters between 0..1.6s
+        chars1.forEach((c, i) => {
+          const startAt = 0.05 + i * 0.09;
+          const endAt = startAt + 0.5;
+          const p = clamp01((secs - startAt) / (endAt - startAt));
+          const e = easeOutCubic(p);
+          c.style.opacity = e;
+          c.style.transform = `translateY(${(1 - e) * 40}px)`;
+        });
+        // "!" pops at 1.5s
+        const dp = clamp01((secs - 1.5) / 0.5);
+        const de = easeOutCubic(dp);
+        bang1.style.transform = `scale(${de})`;
+        // Tagline fades in 1.8..2.6
+        $("tagline1").style.opacity = clamp01((secs - 1.8) / 0.8);
+        // Scene-level opacity (handles unreveal at end)
+        const unreveal = clamp01((secs - 3.2) / 0.8);
+        const sceneOp = 1 - easeInCubic(unreveal);
+        this.el.style.opacity = sceneOp;
+        this.el.style.transform = `translateY(${unreveal * -30}px) scale(${1 - unreveal * 0.04})`;
+      }
+    },
+    // Scene 2: 4.0 -> 9.5 (reveal 4.0..4.8, count 4.8..7.8, hold 7.8..8.7, unreveal 8.7..9.5)
+    {
+      start: 4.0, end: 9.5,
+      el: $("scene2"),
+      render(lt, secs) {
+        const local = secs - 4.0; // 0..5.5
+        const reveal = clamp01(local / 0.8);
+        const unreveal = clamp01((local - 4.7) / 0.8);
+        const op = easeOutCubic(reveal) * (1 - easeInCubic(unreveal));
+        this.el.style.opacity = op;
+        this.el.style.transform = `translateY(${(1 - easeOutCubic(reveal)) * 24 + unreveal * -24}px) scale(${1 - unreveal * 0.04})`;
+      }
+    },
+    // Scene 3: 9.5 -> 14.5
+    {
+      start: 9.5, end: 14.5,
+      el: $("scene3"),
+      render(lt, secs) {
+        const local = secs - 9.5; // 0..5
+        const reveal = clamp01(local / 0.8);
+        const unreveal = clamp01((local - 4.2) / 0.8);
+        const op = easeOutCubic(reveal) * (1 - easeInCubic(unreveal));
+        this.el.style.opacity = op;
+        this.el.style.transform = `translateY(${(1 - easeOutCubic(reveal)) * 24 + unreveal * -24}px) scale(${1 - unreveal * 0.04})`;
+      }
+    },
+    // Scene 4: 14.5 -> 17.8 (lines stagger)
+    {
+      start: 14.5, end: 17.8,
+      el: $("scene4"),
+      render(lt, secs) {
+        const local = secs - 14.5; // 0..3.3
+        const sceneIn = clamp01(local / 0.4);
+        const unreveal = clamp01((local - 2.6) / 0.7);
+        const op = easeOutCubic(sceneIn) * (1 - easeInCubic(unreveal));
+        this.el.style.opacity = op;
+        const lines = [$("line1"), $("line2"), $("line3")];
+        lines.forEach((el, i) => {
+          const startAt = 0.15 + i * 0.55;
+          const p = clamp01((local - startAt) / 0.7);
+          const e = easeOutCubic(p);
+          el.style.opacity = e;
+          el.style.transform = `translateY(${(1 - e) * 24}px)`;
+        });
+        this.el.style.transform = `translateY(${unreveal * -24}px)`;
+      }
+    },
+    // Scene 5: 17.8 -> 20.0
+    //   wordmark reveal: 17.8 -> 18.4
+    //   hold:            18.4 -> 19.3
+    //   blackout:        19.3 -> 20.0
+    {
+      start: 17.8, end: 20.0,
+      el: $("scene5"),
+      render(lt, secs) {
+        const local = secs - 17.8; // 0..2.2
+        const reveal = clamp01(local / 0.6);
+        this.el.style.opacity = easeOutCubic(reveal);
+        const blackoutStart = 1.5; // 19.3s
+        const bp = clamp01((local - blackoutStart) / 0.7);
+        const zoom = easeInCubic(bp);
+        const scale = 0.97 + easeOutCubic(reveal) * 0.03 + zoom * 0.06;
+        this.el.style.transform = `scale(${scale})`;
+      }
+    },
+  ];
+
+  const blackoutEl = $("blackout");
+  const iridEl = $("irid");
+
+  function tick(secs) {
+    const t = Math.max(0, Math.min(20, secs));
+    drawIrid(t);
+    TIMELINE.forEach((s) => {
+      const active = t >= s.start && t <= s.end + 0.001;
+      if (active) {
+        s.el.style.display = "flex";
+        s.render(0, t);
+      } else {
+        s.el.style.opacity = 0;
+      }
+    });
+    // Cinematic blackout: 19.3s -> 20.0s
+    const bp = clamp01((t - 19.3) / 0.7);
+    blackoutEl.style.opacity = easeInCubic(bp);
+    iridEl.style.opacity = 0.12 * (1 - bp);
+  }
+  window.setTime = tick;
+
+  // Live preview loop unless render mode
+  window.__renderMode = new URLSearchParams(location.search).has("render");
+  if (!window.__renderMode) {
+    const startedAt = performance.now();
+    function loop() {
+      const elapsed = (performance.now() - startedAt) / 1000;
+      const t = elapsed % 22; // 20s + 2s pause then loop
+      tick(Math.min(t, 20));
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+  } else {
+    // Render mode: start at t=0, wait for explicit setTime calls
+    tick(0);
+    window.__ready = true;
+  }
+</script>
+</body>
+</html>
