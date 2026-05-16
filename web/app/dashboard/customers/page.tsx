@@ -11,9 +11,9 @@ import { getMenuItem } from "@/lib/mock/menu"
 import type { Customer } from "@/lib/mock/types"
 
 const churnColor = {
-  low: "bg-emerald-100 text-emerald-800 hover:bg-emerald-100",
-  medium: "bg-amber-100 text-amber-800 hover:bg-amber-100",
-  high: "bg-rose-100 text-rose-800 hover:bg-rose-100",
+  low: "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/10",
+  medium: "bg-amber-500/10 text-amber-300 border border-amber-500/20 hover:bg-amber-500/10",
+  high: "bg-rose-500/10 text-rose-300 border border-rose-500/20 hover:bg-rose-500/10",
 }
 
 export default function CustomersPage() {
@@ -129,7 +129,7 @@ export default function CustomersPage() {
                   {selected.allergies.length ? (
                     <div className="flex flex-wrap gap-1.5">
                       {selected.allergies.map((a) => (
-                        <Badge key={a} variant="secondary" className="bg-rose-100 text-rose-800 hover:bg-rose-100 font-normal">
+                        <Badge key={a} variant="secondary" className="bg-rose-500/10 text-rose-300 border border-rose-500/20 hover:bg-rose-500/10 font-normal">
                           {a}
                         </Badge>
                       ))}

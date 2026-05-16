@@ -1,19 +1,18 @@
 "use client"
 
-import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, PhoneCall, Users, Sparkles, Network, ArrowLeft, Settings } from "lucide-react"
+import { SquaresFour, PhoneCall, Users, Sparkle, Graph, ArrowLeft, Gear } from "@phosphor-icons/react/dist/ssr"
 import { cn } from "@/lib/utils"
 import { HeyGMark } from "@/components/heyg-mark"
 import { TransitionLink } from "@/components/transition-link"
 
 const nav = [
-  { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Overview", icon: SquaresFour },
   { href: "/dashboard/calls", label: "Live Calls", icon: PhoneCall },
   { href: "/dashboard/customers", label: "Customers", icon: Users },
-  { href: "/dashboard/insights", label: "Insights", icon: Sparkles },
-  { href: "/dashboard/gbrain", label: "GBrain", icon: Network },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings },
+  { href: "/dashboard/insights", label: "Insights", icon: Sparkle },
+  { href: "/dashboard/gbrain", label: "GBrain", icon: Graph },
+  { href: "/dashboard/settings", label: "Settings", icon: Gear },
 ]
 
 export function SidebarContents({ onNavigate }: { onNavigate?: () => void }) {
@@ -21,10 +20,10 @@ export function SidebarContents({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <>
-      <div className="px-5 py-5 border-b border-border/60">
-        <Link href="/" className="flex items-center" onClick={onNavigate}>
-          <HeyGMark className="text-xl text-foreground heyg-logo-shared" />
-        </Link>
+      <div className="px-5 py-6 border-b border-border/60 flex items-center justify-center">
+        <TransitionLink href="/" className="flex items-center justify-center" onClick={onNavigate}>
+          <HeyGMark className="text-5xl text-foreground heyg-logo-shared" />
+        </TransitionLink>
       </div>
 
       <div className="px-3 pt-4 pb-2">
@@ -43,7 +42,7 @@ export function SidebarContents({ onNavigate }: { onNavigate?: () => void }) {
           const active =
             pathname === item.href || (item.href !== "/dashboard" && pathname?.startsWith(item.href))
           return (
-            <Link
+            <TransitionLink
               key={item.href}
               href={item.href}
               onClick={onNavigate}
@@ -54,9 +53,9 @@ export function SidebarContents({ onNavigate }: { onNavigate?: () => void }) {
                   : "text-foreground/80 hover:bg-muted hover:text-foreground",
               )}
             >
-              <Icon className="w-4 h-4 shrink-0" />
+              <Icon className="w-4 h-4 shrink-0" weight={active ? "fill" : "regular"} />
               <span>{item.label}</span>
-            </Link>
+            </TransitionLink>
           )
         })}
       </nav>
@@ -77,7 +76,7 @@ export function SidebarContents({ onNavigate }: { onNavigate?: () => void }) {
 
 export function DashboardSidebar() {
   return (
-    <aside className="hidden md:flex md:flex-col w-60 shrink-0 border-r border-border/60 bg-background/40 backdrop-blur-xl h-screen sticky top-0">
+    <aside className="hidden md:flex md:flex-col w-60 shrink-0 border-r border-border/60 bg-background/20 backdrop-blur-2xl h-screen sticky top-0">
       <SidebarContents />
     </aside>
   )

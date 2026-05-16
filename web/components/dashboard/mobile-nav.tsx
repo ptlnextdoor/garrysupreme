@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
-import { Menu } from "lucide-react"
+import { List } from "@phosphor-icons/react/dist/ssr"
 import {
   Sheet,
   SheetContent,
@@ -27,12 +27,12 @@ export function MobileNav() {
           aria-label="Open navigation"
           className="md:hidden -ml-1 w-9 h-9 inline-flex items-center justify-center rounded-lg text-foreground/80 hover:text-foreground hover:bg-muted transition-colors"
         >
-          <Menu className="w-5 h-5" />
+          <List className="w-5 h-5" />
         </button>
       </SheetTrigger>
       <SheetContent
         side="left"
-        className="w-64 p-0 flex flex-col bg-background/40 backdrop-blur-xl border-r border-border/60 [&>button:last-child]:hidden"
+        className="w-64 p-0 flex flex-col bg-background/20 backdrop-blur-2xl border-r border-border/60 [&>button:last-child]:hidden"
       >
         <SheetTitle className="sr-only">Dashboard navigation</SheetTitle>
         <SheetDescription className="sr-only">

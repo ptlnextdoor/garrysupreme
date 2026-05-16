@@ -125,7 +125,7 @@ export function GBrainGraph() {
             if (globalScale > 1.4 || n.type === "customer" || n.type === "insight") {
               const fontSize = Math.max(11 / globalScale, 4)
               ctx.font = `${fontSize}px Inter, sans-serif`
-              ctx.fillStyle = "rgba(40, 26, 13, 0.85)"
+              ctx.fillStyle = "rgba(240, 240, 245, 0.9)"
               ctx.textAlign = "center"
               ctx.textBaseline = "top"
               const label = n.label.length > 22 ? n.label.slice(0, 21) + "…" : n.label
