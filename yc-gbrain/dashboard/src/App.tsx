@@ -1,19 +1,29 @@
 import { useEffect, useState, useTransition } from "react";
-import { approveMemory, demoGetContext, demoSaveOrder, endDemoCall, fetchDashboard, rejectMemory, resetDemo, startDemoCall } from "./api";
-import type { ActiveCall, Customer, DashboardData, MemoryCandidate } from "./types";
+import { approveMemory, demoGetContext, demoSaveOrder, demoSearch, endDemoCall, fetchDashboard, rejectMemory, resetDemo, startDemoCall } from "./api";
+import type { ActiveCall, CatalogMatch, Company, CompanyId, Customer, DashboardData, DemoQuery, MemoryCandidate, WorkflowEvent } from "./types";
+
+const fallbackCompany: Company = {
+  id: "costco",
+  name: "Costco",
+  hours: "Warehouse and delivery availability varies by location",
+  catalogLabel: "5,329 Costco catalog rows: 5,011 local rows + 318 PR #6 seed rows",
+  rules: [],
+  officialFacts: [],
+  catalogCount: 0,
+  sampleItems: []
+};
 
 const fallback: DashboardData = {
-  company: {
-    id: "sunrise-coffee",
-    name: "Sunrise Coffee",
-    hours: "6:30 AM - 5:00 PM",
-    rules: [],
-    menu: []
-  },
+  selectedCompanyId: "costco",
+  companies: [fallbackCompany],
+  company: fallbackCompany,
   activeCalls: [],
   customers: [],
   memoryCandidates: [],
   orders: [],
+  workflowEvents: [],
+  lastSearch: null,
+  demoQueries: [],
   metrics: {
     activeCalls: 0,
     ordersConfirmed: 0,
@@ -37,8 +47,8 @@ function statusClass(status: ActiveCall["status"]) {
 
 export default function App() {
   const [data, setData] = useState<DashboardData>(fallback);
-  const [selectedCallId, setSelectedCallId] = useState("call_live_aayushya");
-  const [eventLog, setEventLog] = useState<string[]>(["Dashboard ready. Waiting for Vapi calls."]);
+  const [selectedCallId, setSelectedCallId] = useState("call_live_costco");
+  const [eventLog, setEventLog] = useState<string[]>(["Dashboard ready. Costco brain is the primary demo."]);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -54,7 +64,7 @@ export default function App() {
     const socket = new WebSocket(`${protocol}://${window.location.host}/ws`);
     socket.onmessage = (message) => {
       const parsed = JSON.parse(message.data) as { event: string; payload: unknown };
-      setEventLog((current) => [`${new Date().toLocaleTimeString()} ${parsed.event}`, ...current].slice(0, 6));
+      setEventLog((current) => [`${new Date().toLocaleTimeString()} ${parsed.event}`, ...current].slice(0, 7));
       if (parsed.event === "dashboard_updated") {
         setData(parsed.payload as DashboardData);
       } else {
@@ -64,52 +74,79 @@ export default function App() {
     return () => socket.close();
   }, []);
 
+  const selectedCompanyId = data.selectedCompanyId;
   const selectedCall = data.activeCalls.find((call) => call.id === selectedCallId) ?? data.activeCalls[0];
-  const primaryCustomer = data.customers.find((customer) => customer.id === "aayushya") ?? data.customers[0];
+  const selectedCallCustomer = selectedCall
+    ? data.customers.find((customer) => customer.phone === selectedCall.phone || customer.name === selectedCall.customerName)
+    : undefined;
+  const primaryCustomer = selectedCallCustomer ?? data.customers.find((customer) => customer.id !== "new-customer") ?? data.customers[0];
   const pendingMemories = data.memoryCandidates.filter((memory) => memory.status === "pending");
 
-  async function runContextDemo() {
+  async function runContextDemo(query?: string) {
     setError(null);
     try {
-      await demoGetContext();
+      await demoGetContext(selectedCompanyId, query);
       await reload();
-      setEventLog((current) => ["Context loaded for Aayushya.", ...current].slice(0, 6));
+      setEventLog((current) => [`${data.company.name} context loaded.`, ...current].slice(0, 7));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Context demo failed");
+    }
+  }
+
+  async function runSearch(query: DemoQuery) {
+    setError(null);
+    try {
+      await demoSearch(query.company, query.query, primaryCustomer?.id);
+      await reload();
+      setEventLog((current) => [`Catalog matched: ${query.query}`, ...current].slice(0, 7));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Catalog search failed");
     }
   }
 
   async function runOrderDemo() {
     setError(null);
     try {
-      await demoSaveOrder();
+      await demoSaveOrder(selectedCompanyId);
       await reload();
-      setEventLog((current) => ["Order saved and memory candidates created.", ...current].slice(0, 6));
+      setEventLog((current) => ["Order saved and memory candidates created.", ...current].slice(0, 7));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Order demo failed");
+    }
+  }
+
+  async function switchCompany(companyId: CompanyId) {
+    setError(null);
+    try {
+      const response = await resetDemo(companyId);
+      setData(response.dashboard as DashboardData);
+      setSelectedCallId(companyId === "costco" ? "call_live_costco" : "call_live_starbucks");
+      setEventLog((current) => [`Switched to separate ${companyId} brain.`, ...current].slice(0, 7));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Company switch failed");
     }
   }
 
   async function approve(id: string) {
     await approveMemory(id);
     await reload();
-    setEventLog((current) => ["Customer Brain updated from approved memory.", ...current].slice(0, 6));
+    setEventLog((current) => ["Customer Brain updated from approved memory.", ...current].slice(0, 7));
   }
 
   async function reject(id: string) {
     await rejectMemory(id);
     await reload();
-    setEventLog((current) => ["Memory candidate rejected.", ...current].slice(0, 6));
+    setEventLog((current) => ["Memory candidate rejected.", ...current].slice(0, 7));
   }
 
   async function runDemoAction(action: "start" | "end" | "reset") {
     setError(null);
     try {
-      if (action === "start") await startDemoCall();
-      if (action === "end") await endDemoCall();
-      if (action === "reset") await resetDemo();
+      if (action === "start") await startDemoCall(selectedCompanyId);
+      if (action === "end") await endDemoCall(selectedCompanyId);
+      if (action === "reset") await resetDemo(selectedCompanyId);
       await reload();
-      setEventLog((current) => [`Demo ${action} complete.`, ...current].slice(0, 6));
+      setEventLog((current) => [`Demo ${action} complete.`, ...current].slice(0, 7));
     } catch (err) {
       setError(err instanceof Error ? err.message : `Demo ${action} failed`);
     }
@@ -117,16 +154,16 @@ export default function App() {
 
   return (
     <main className="app-shell">
-      <Sidebar />
+      <Sidebar company={data.company} />
       <section className="workspace">
         <header className="topbar">
           <div>
-            <p className="section-label">Sunrise Coffee</p>
-            <h1>Phone concierge with memory</h1>
+            <p className="section-label">{data.company.name} Company Brain</p>
+            <h1>Catalog concierge with memory</h1>
           </div>
           <div className="topbar-actions">
             <button className="ghost-button" onClick={() => runDemoAction("start")} disabled={isPending}>Start call</button>
-            <button className="ghost-button" onClick={runContextDemo} disabled={isPending}>Simulate context</button>
+            <button className="ghost-button" onClick={() => runContextDemo()} disabled={isPending}>Simulate context</button>
             <button className="primary-button" onClick={runOrderDemo} disabled={isPending}>Confirm demo order</button>
             <button className="ghost-button" onClick={() => runDemoAction("reset")} disabled={isPending}>Reset</button>
           </div>
@@ -134,12 +171,16 @@ export default function App() {
 
         {error && <div className="error-strip">{error}</div>}
 
+        <CompanySwitcher companies={data.companies} selected={selectedCompanyId} onSwitch={switchCompany} />
         <MetricRow data={data} />
 
         <div className="dashboard-grid">
           <LiveCalls calls={data.activeCalls} selectedCallId={selectedCall?.id} onSelect={setSelectedCallId} />
           {selectedCall && <CallDetail call={selectedCall} />}
           {primaryCustomer && <CustomerCard customer={primaryCustomer} />}
+          <QueryPanel queries={data.demoQueries} onRun={runSearch} onContext={runContextDemo} />
+          <WorkflowPanel events={data.workflowEvents} />
+          <MatchPanel matches={data.lastSearch?.results ?? []} decision={data.lastSearch?.decision} question={data.lastSearch?.meta.clarifying_question} />
           <MemoryQueue memories={pendingMemories} onApprove={approve} onReject={reject} />
           <CompanyBrain data={data} />
           <EventLog entries={eventLog} />
@@ -149,7 +190,7 @@ export default function App() {
   );
 }
 
-function Sidebar() {
+function Sidebar({ company }: { company: Company }) {
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -160,7 +201,7 @@ function Sidebar() {
         </div>
       </div>
       <nav>
-        {["Live calls", "Customer brain", "Company brain", "Insights", "Memory review"].map((item, index) => (
+        {["Live calls", "Workflow", "Catalog match", "Customer brain", "Company brain", "Memory review"].map((item, index) => (
           <a className={index === 0 ? "selected" : ""} href={`#${item.toLowerCase().replaceAll(" ", "-")}`} key={item}>
             <span />
             {item}
@@ -168,19 +209,33 @@ function Sidebar() {
         ))}
       </nav>
       <div className="sidebar-card">
-        <p>Vapi tools</p>
+        <p>{company.name}</p>
+        <code>{company.catalogLabel}</code>
         <code>POST /api/context</code>
-        <code>POST /api/save_order</code>
+        <code>POST /api/search</code>
       </div>
     </aside>
   );
 }
 
+function CompanySwitcher({ companies, selected, onSwitch }: { companies: Company[]; selected: CompanyId; onSwitch: (id: CompanyId) => void }) {
+  return (
+    <section className="company-switcher">
+      {companies.map((company) => (
+        <button className={company.id === selected ? "company-tab selected-company-tab" : "company-tab"} key={company.id} onClick={() => onSwitch(company.id)}>
+          <strong>{company.name}</strong>
+          <span>{company.catalogCount.toLocaleString()} rows · separate brain</span>
+        </button>
+      ))}
+    </section>
+  );
+}
+
 function MetricRow({ data }: { data: DashboardData }) {
   const metrics = [
+    ["Catalog rows", data.company.catalogCount.toLocaleString(), data.company.catalogLabel],
     ["Active calls", data.metrics.activeCalls.toString(), "parallel now"],
     ["Orders confirmed", data.metrics.ordersConfirmed.toString(), "during demo"],
-    ["Human escalations", data.metrics.humanEscalations.toString(), "safe handoff"],
     ["Recovered today", `$${data.metrics.recoveredRevenueToday}`, "estimated"]
   ];
 
@@ -241,6 +296,83 @@ function CallDetail({ call }: { call: ActiveCall }) {
   );
 }
 
+function QueryPanel({ queries, onRun, onContext }: { queries: DemoQuery[]; onRun: (query: DemoQuery) => void; onContext: (query: string) => void }) {
+  return (
+    <section className="panel query-panel" id="catalog-match">
+      <div className="panel-heading">
+        <h2>Demo queries</h2>
+        <span>{queries.length} seeded</span>
+      </div>
+      <div className="query-list">
+        {queries.slice(0, 5).map((query) => (
+          <article className="query-card" key={`${query.company}-${query.query}`}>
+            <span>{query.persona}</span>
+            <p>{query.query}</p>
+            <div>
+              <button onClick={() => onRun(query)}>Search</button>
+              <button onClick={() => onContext(query.query)}>Vapi context</button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function WorkflowPanel({ events }: { events: WorkflowEvent[] }) {
+  const latestByNode = new Map<string, WorkflowEvent>();
+  for (const event of events) {
+    if (!latestByNode.has(event.node)) latestByNode.set(event.node, event);
+  }
+  const nodes: WorkflowEvent["node"][] = ["Call", "Company Brain", "Customer Brain", "Catalog Matcher", "Review Gate", "Order/Memory Write"];
+  return (
+    <section className="panel workflow-panel" id="workflow">
+      <div className="panel-heading">
+        <h2>Working trace</h2>
+        <span>n8n-style</span>
+      </div>
+      <div className="workflow-rail">
+        {nodes.map((node) => {
+          const event = latestByNode.get(node);
+          return (
+            <article className={`workflow-node ${event?.status ?? "idle"}`} key={node}>
+              <span>{node}</span>
+              <strong>{event?.label ?? "Waiting"}</strong>
+              <p>{event?.detail ?? "Node will light up from backend events."}</p>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function MatchPanel({ matches, decision, question }: { matches: CatalogMatch[]; decision?: string; question?: string | null }) {
+  return (
+    <section className="panel match-panel">
+      <div className="panel-heading">
+        <h2>Catalog match</h2>
+        <span>{decision ?? "waiting"}</span>
+      </div>
+      {question && <p className="review-note">{question}</p>}
+      <div className="match-list">
+        {matches.slice(0, 3).map((match) => (
+          <article className="match-card" key={`${match.sku}-${match.rank}`}>
+            <div>
+              <strong>{match.name}</strong>
+              <span>{Math.round(match.confidence * 100)}% · {match.confidence_label}</span>
+            </div>
+            <p>{match.category} · {match.price_band_seed} · {match.stock_seed}</p>
+            {match.personalization_note && <small>{match.personalization_note}</small>}
+            {match.review_reasons.length > 0 && <small>Review: {match.review_reasons.join(", ")}</small>}
+          </article>
+        ))}
+        {!matches.length && <p className="empty-copy">Run a demo query to show ranked catalog matches.</p>}
+      </div>
+    </section>
+  );
+}
+
 function CustomerCard({ customer }: { customer: Customer }) {
   return (
     <section className="panel customer-card" id="customer-brain">
@@ -257,11 +389,33 @@ function CustomerCard({ customer }: { customer: Customer }) {
       </div>
       <TagGroup title="Likes" items={customer.likes} />
       <TagGroup title="Avoids" items={customer.avoids} tone="warning" />
+      <TagGroup title="Recurring" items={customer.recurringItems} />
+      <HouseholdMemory customer={customer} />
       <div className="last-order">
         <span>Last order</span>
         <p>{customer.lastOrder}</p>
       </div>
     </section>
+  );
+}
+
+function HouseholdMemory({ customer }: { customer: Customer }) {
+  if (!customer.household.length) return null;
+
+  return (
+    <div className="household-memory">
+      <span>{customer.companyId === "costco" ? "Household / team memory" : "People memory"}</span>
+      <div className="household-grid">
+        {customer.household.map((member) => (
+          <article key={member.name}>
+            <strong>{member.name}</strong>
+            {member.notes.slice(0, 3).map((note) => (
+              <p key={note}>{note}</p>
+            ))}
+          </article>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -306,17 +460,20 @@ function CompanyBrain({ data }: { data: DashboardData }) {
     <section className="panel company-panel" id="company-brain">
       <div className="panel-heading">
         <h2>Company brain</h2>
-        <span>{data.company.hours}</span>
+        <span>{data.company.catalogCount.toLocaleString()} rows</span>
+      </div>
+      <div className="brain-facts">
+        {data.company.rules.slice(0, 4).map((rule) => <p key={rule}>{rule}</p>)}
       </div>
       <div className="menu-grid">
-        {data.company.menu.slice(0, 4).map((item) => (
-          <article key={item.name}>
+        {data.company.sampleItems.slice(0, 4).map((item) => (
+          <article key={`${item.company_id}-${item.sku}`}>
             <div>
               <strong>{item.name}</strong>
-              <span>${item.price.toFixed(2)}</span>
+              <span>{item.price_band_seed}</span>
             </div>
-            <p>{item.description}</p>
-            <small>{item.stock} · {item.modifiers.slice(0, 3).join(", ")}</small>
+            <p>{item.category}</p>
+            <small>{item.stock_seed} · {item.tags.slice(0, 3).join(", ")}</small>
           </article>
         ))}
       </div>
@@ -328,8 +485,8 @@ function EventLog({ entries }: { entries: string[] }) {
   return (
     <section className="panel event-panel">
       <div className="panel-heading">
-        <h2>Workflow trace</h2>
-        <span>GStack demo</span>
+        <h2>Event log</h2>
+        <span>backend events</span>
       </div>
       {entries.map((entry) => (
         <p key={entry}>{entry}</p>
