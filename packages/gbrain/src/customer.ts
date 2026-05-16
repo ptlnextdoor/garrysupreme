@@ -121,10 +121,16 @@ export class CustomerBrain {
 }
 
 export function normalizePhone(phone: string): string {
-  const trimmed = phone.trim()
-  if (trimmed.startsWith('+')) return trimmed
-  const digits = trimmed.replace(/\D/g, '')
-  return digits ? `+${digits}` : trimmed
+  if (!phone || typeof phone !== 'string') return phone ?? ''
+  // Strip extension (x123, ext 123, #123) — keep only the base number
+  const withoutExt = phone.replace(/\s*(?:ext\.?|x|#).*$/i, '').trim()
+  // Extract digits; preserve leading + if present
+  const hasPlus = withoutExt.startsWith('+')
+  const digits = withoutExt.replace(/\D/g, '')
+  if (!digits) return withoutExt
+  // 10 digits → assume US, prepend 1
+  if (digits.length === 10) return `+1${digits}`
+  return hasPlus ? `+${digits}` : `+${digits}`
 }
 
 function parseProfile(content: string, phone: string): CustomerProfile {

@@ -128,13 +128,25 @@ const vapiWebhookRoute: FastifyPluginAsync = async (app: FastifyInstance) => {
   const companyBrain = new CompanyBrain(client)
   const customerBrain = new CustomerBrain(client)
 
+  app.options('/api/vapi-webhook', async (_req, reply) => {
+    reply.header('Access-Control-Allow-Origin', '*')
+    reply.header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+    reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    return reply.code(204).send()
+  })
+
   app.post('/api/vapi-webhook', async (req, reply) => {
-    const body = req.body as Record<string, unknown>
-    const message = (body?.message ?? body) as Record<string, unknown>
-    const toolCallList = (message?.toolCallList ?? []) as Array<{
-      id: string
-      function: { name: string; arguments: string }
-    }>
+    const body = (req.body ?? {}) as Record<string, unknown>
+    const message = (body?.message ?? body ?? {}) as Record<string, unknown>
+    const rawToolCallList = Array.isArray(message?.toolCallList) ? message.toolCallList : []
+    const toolCallList = rawToolCallList
+      .filter((tc): tc is Record<string, unknown> => !!tc && typeof tc === 'object')
+      .map((tc) => ({
+        id: (tc.id as string) ?? `unknown-${Math.random().toString(36).slice(2, 8)}`,
+        function: (tc.function && typeof tc.function === 'object'
+          ? tc.function
+          : { name: '', arguments: '{}' }) as { name: string; arguments: string },
+      }))
 
     // Extract phone and callId from the Vapi payload
     const call = (message?.call ?? body?.call ?? {}) as Record<string, unknown>
@@ -169,30 +181,33 @@ const vapiWebhookRoute: FastifyPluginAsync = async (app: FastifyInstance) => {
 
     const results = await Promise.all(
       toolCallList.map(async (tc) => {
+        const toolName = tc.function?.name ?? ''
         try {
           let args: Record<string, unknown> = {}
           try {
-            args = JSON.parse(tc.function.arguments || '{}')
+            args = JSON.parse(tc.function?.arguments || '{}')
           } catch {
-            log('failed to parse tool args', tc.function.arguments)
+            log('failed to parse tool args', tc.function?.arguments)
           }
 
           let result: unknown
-          if (tc.function.name === 'get_context') {
+          if (!toolName) {
+            result = { error: 'missing tool name' }
+          } else if (toolName === 'get_context') {
             const request = (args.request as string) ?? ''
             result = await handleGetContext(phone, request, companyBrain, customerBrain)
-          } else if (tc.function.name === 'save_order') {
+          } else if (toolName === 'save_order') {
             const parsed = saveOrderArgsSchema.safeParse(args)
             const orderArgs = parsed.success ? parsed.data : saveOrderArgsSchema.parse({})
             result = await handleSaveOrder(phone, callId, orderArgs, customerBrain)
           } else {
-            log(`unknown tool: ${tc.function.name}`)
-            result = { error: `unknown tool: ${tc.function.name}` }
+            log(`unknown tool: ${toolName}`)
+            result = { error: `unknown tool: ${toolName}` }
           }
 
           return { toolCallId: tc.id, result }
         } catch (err) {
-          log(`tool ${tc.function.name} failed`, err)
+          log(`tool ${toolName} failed`, err)
           return { toolCallId: tc.id, result: { error: String(err) } }
         }
       }),
