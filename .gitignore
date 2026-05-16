@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.DS_Store
+
+.context/screenshots/
+gbrain/
+yc-gbrain/gbrain/state.json
+yc-gbrain/gbrain/orders/*.md
+yc-gbrain/dashboard/dist/
+yc-gbrain/dashboard/node_modules/
+yc-gbrain/server/dist/
