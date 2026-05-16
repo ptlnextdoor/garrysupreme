@@ -8,7 +8,7 @@ export default function GBrainPage() {
         title="GBrain"
         subtitle="Your business as a knowledge graph. Markdown-first, human-auditable, no vendor lock-in."
       />
-      <div className="p-6 lg:p-10 mx-auto max-w-7xl w-full">
+      <div className="p-6 lg:px-12 lg:py-10 w-full">
         <GBrainGraph />
 
         <div className="mt-6 grid sm:grid-cols-3 gap-4 text-sm text-muted-foreground">

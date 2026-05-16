@@ -22,7 +22,7 @@ export default function InsightsPage() {
   return (
     <>
       <DashboardTopbar title="Insights" subtitle="What hey, G! learned about your business this week." />
-      <div className="p-6 lg:p-10 mx-auto max-w-7xl w-full space-y-6">
+      <div className="p-6 lg:px-12 lg:py-10 w-full space-y-6">
         <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
           {insights.map((i) => {
             const Icon = iconFor(i.kind)

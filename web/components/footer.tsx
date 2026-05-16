@@ -32,15 +32,6 @@ const footerLinks = {
 export function Footer() {
   return (
     <div className="relative">
-      <div className="absolute -top-[10vw] left-0 right-0 flex items-end justify-center overflow-visible pointer-events-none z-0">
-        <h2
-          className="font-bold italic text-center text-[24vw] sm:text-[22vw] md:text-[20vw] lg:text-[18vw] leading-[0.85] tracking-tighter text-zinc-100 whitespace-nowrap"
-          style={{ fontFamily: "var(--font-playfair)" }}
-        >
-          hey, G!
-        </h2>
-      </div>
-
       <footer id="contact" className="relative z-20 border-t border-border py-16 px-6 bg-background">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">

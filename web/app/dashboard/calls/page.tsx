@@ -32,7 +32,7 @@ export default function CallsPage() {
   return (
     <>
       <DashboardTopbar title="Live Calls" subtitle="Every call answered, every transcript saved." />
-      <div className="p-6 lg:p-10 mx-auto max-w-7xl">
+      <div className="p-6 lg:px-12 lg:py-10">
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] gap-6">
           {/* List */}
           <Card className="self-start">
