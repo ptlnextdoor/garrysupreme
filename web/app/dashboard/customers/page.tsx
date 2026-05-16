@@ -22,49 +22,47 @@ export default function CustomersPage() {
   return (
     <>
       <DashboardTopbar title="Customers" subtitle="Every caller, every preference, perfectly remembered." />
-      <div className="p-6 lg:p-10 max-w-6xl">
-        <Card>
+      <div className="p-6 lg:p-10 mx-auto max-w-7xl w-full">
+        <Card className="p-2">
           <CardContent className="p-0">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Customer</TableHead>
-                  <TableHead className="hidden md:table-cell">Language</TableHead>
-                  <TableHead className="hidden sm:table-cell text-right">Orders</TableHead>
-                  <TableHead className="hidden sm:table-cell text-right">Avg ticket</TableHead>
-                  <TableHead>Risk</TableHead>
+                  <TableHead className="text-sm py-4">Customer</TableHead>
+                  <TableHead className="hidden md:table-cell text-sm py-4">Language</TableHead>
+                  <TableHead className="hidden sm:table-cell text-right text-sm py-4">Orders</TableHead>
+                  <TableHead className="hidden sm:table-cell text-right text-sm py-4">Avg ticket</TableHead>
+                  <TableHead className="text-sm py-4">Risk</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {customers.map((c) => (
-                  <TableRow
-                    key={c.id}
-                    className="cursor-pointer"
-                    onClick={() => setSelected(c)}
-                  >
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-medium">
+                  <TableRow key={c.id} className="cursor-pointer" onClick={() => setSelected(c)}>
+                    <TableCell className="py-5">
+                      <div className="flex items-center gap-4">
+                        <div className="w-11 h-11 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-medium">
                           {c.name
                             .split(" ")
                             .map((w) => w[0])
                             .join("")}
                         </div>
                         <div>
-                          <div className="text-sm font-medium">{c.name}</div>
-                          <div className="text-xs text-muted-foreground">{c.phone}</div>
+                          <div className="text-base font-medium">{c.name}</div>
+                          <div className="text-sm text-muted-foreground">{c.phone}</div>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+                    <TableCell className="hidden md:table-cell text-base text-muted-foreground py-5">
                       {c.language}
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell text-right text-sm">{c.totalOrders}</TableCell>
-                    <TableCell className="hidden sm:table-cell text-right text-sm">
+                    <TableCell className="hidden sm:table-cell text-right text-base py-5">
+                      {c.totalOrders}
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell text-right text-base py-5">
                       ${c.avgTicket.toFixed(2)}
                     </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className={churnColor[c.churnRisk]}>
+                    <TableCell className="py-5">
+                      <Badge variant="secondary" className={`${churnColor[c.churnRisk]} text-sm py-1 px-2.5`}>
                         {c.churnRisk}
                       </Badge>
                     </TableCell>
