@@ -25,16 +25,21 @@ Configure Vapi tools to call:
 
 - `POST https://your-ngrok-url.ngrok-free.app/api/context`
 - `POST https://your-ngrok-url.ngrok-free.app/api/save_order`
+- `POST https://your-ngrok-url.ngrok-free.app/api/vapi/webhook`
 
 The server accepts simple JSON bodies and common Vapi tool-call wrappers.
+
+For exact assistant setup, use `VAPI_SETUP.md`.
 
 ## Demo path
 
 1. Open the dashboard.
-2. Click `Simulate context` or call the Vapi number and ask: “I want something cold, sweet, not too heavy, no dairy.”
-3. Pulse should recommend `Iced Chai Latte, oat milk, cardamom`.
-4. Click `Confirm demo order` or let Vapi call `save_order`.
-5. The active call changes to confirmed, the order is written under `gbrain/orders/`, and memory candidates appear for approval.
+2. Click `Reset`, then `Start call`.
+3. Call the Vapi number and ask: “I want something cold, sweet, not too heavy, no dairy.”
+4. Pulse should recommend `Iced Chai Latte, oat milk, cardamom`.
+5. Click `Confirm demo order` or let Vapi call `save_order`.
+6. The active call changes to confirmed, the order is written under `gbrain/orders/`, and memory candidates appear for approval.
+7. Approve one memory candidate to update the customer brain and markdown profile.
 
 ## File-backed GBrain
 

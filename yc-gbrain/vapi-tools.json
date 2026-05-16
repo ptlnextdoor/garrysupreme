@@ -1,41 +1,53 @@
 [
   {
-    "name": "get_context",
-    "description": "Get customer profile and company menu before making recommendations.",
-    "parameters": {
-      "type": "object",
-      "properties": {
-        "phone_number": {
-          "type": "string",
-          "description": "Caller phone number"
+    "type": "function",
+    "function": {
+      "name": "get_context",
+      "description": "Get customer profile, company menu, and ranked recommendations before making recommendations.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "phone_number": {
+            "type": "string",
+            "description": "Caller phone number"
+          },
+          "request": {
+            "type": "string",
+            "description": "What the customer is asking for"
+          }
         },
-        "request": {
-          "type": "string",
-          "description": "What the customer is asking for"
-        }
-      },
-      "required": ["phone_number", "request"]
+        "required": ["phone_number", "request"]
+      }
+    },
+    "server": {
+      "url": "https://YOUR_PUBLIC_URL/api/context"
     }
   },
   {
-    "name": "save_order",
-    "description": "Save confirmed order and learned preferences.",
-    "parameters": {
-      "type": "object",
-      "properties": {
-        "customer_name": { "type": "string" },
-        "phone_number": { "type": "string" },
-        "items": {
-          "type": "array",
-          "items": { "type": "string" }
+    "type": "function",
+    "function": {
+      "name": "save_order",
+      "description": "Save a confirmed order and learned preferences.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "customer_name": { "type": "string" },
+          "phone_number": { "type": "string" },
+          "items": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "new_preferences": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "confidence": { "type": "number" }
         },
-        "new_preferences": {
-          "type": "array",
-          "items": { "type": "string" }
-        },
-        "confidence": { "type": "number" }
-      },
-      "required": ["items"]
+        "required": ["items"]
+      }
+    },
+    "server": {
+      "url": "https://YOUR_PUBLIC_URL/api/save_order"
     }
   }
 ]
