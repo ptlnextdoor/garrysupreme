@@ -196,7 +196,10 @@ export async function getContext(phoneNumber: string, request: string) {
 
     const recommendations = scoreRecommendations(request, customer);
     const relevantMenu = recommendations.length ? recommendations.map((recommendation) => recommendation.item) : company.menu;
-    const call = state.activeCalls.find((candidate) => candidate.phone === customer.phone || candidate.id === "call_live_aayushya");
+    const call =
+      state.activeCalls.find((candidate) => normalizedPhone !== "unknown" && candidate.phone === normalizedPhone) ??
+      state.activeCalls.find((candidate) => candidate.phone === customer.phone) ??
+      state.activeCalls.find((candidate) => candidate.id === "call_live_aayushya");
     if (call) {
       call.status = "context loaded";
       call.intent = request || call.intent;
