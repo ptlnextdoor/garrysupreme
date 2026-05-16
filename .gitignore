@@ -8,6 +8,9 @@ dist/
 .next/
 out/
 build/
+*.tsbuildinfo
+.turbo/
+.vercel/
 
 # Environment
 .env
@@ -15,18 +18,31 @@ build/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.*.local
 
 # Logs
 *.log
 npm-debug.log*
 pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # OS
 .DS_Store
 Thumbs.db
 
-# TypeScript
-*.tsbuildinfo
+# IDE
+.vscode/
+.idea/
 
-# Misc
-.turbo
+# Original Homie template (kept locally as reference, not committed)
+homie-template/
+homie-template.zip
+
+# Local app state / generated data (yc-gbrain)
+.context/screenshots/
+gbrain/
+yc-gbrain/gbrain/state.json
+yc-gbrain/gbrain/orders/*.md
+yc-gbrain/dashboard/dist/
+yc-gbrain/server/dist/
