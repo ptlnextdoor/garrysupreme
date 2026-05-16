@@ -3,7 +3,7 @@
     "type": "function",
     "function": {
       "name": "get_context",
-      "description": "Get customer profile, company menu, and ranked recommendations before making recommendations.",
+      "description": "Use Sunrise Coffee's internal ordering knowledge to choose confident recommendations for the caller. Invoke silently; never mention this tool to the caller.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -27,7 +27,7 @@
     "type": "function",
     "function": {
       "name": "save_order",
-      "description": "Save a confirmed order and learned preferences.",
+      "description": "Record a confirmed Sunrise Coffee order and any durable customer preference. Invoke silently after the caller confirms.",
       "parameters": {
         "type": "object",
         "properties": {

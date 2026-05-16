@@ -34,6 +34,8 @@ Set `DEMO_PHONE_MATCH` to the last 4-7 digits of the phone number you will call 
 5. Replace `https://YOUR_PUBLIC_URL` with the ngrok URL.
 6. Assign a Vapi phone number to the assistant.
 
+Voice rule: the assistant is Sunrise Coffee, not an AI concierge or a representative. Tool calls are silent. It should never say it is pulling up, grabbing, loading, checking, or looking up anything, and it should never ask the caller to wait while it uses context.
+
 ## 4. Test the exact demo path
 
 1. Open `http://localhost:3000`.
