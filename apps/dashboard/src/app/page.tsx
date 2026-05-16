@@ -17,7 +17,7 @@ export default function Dashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">
-            Pulse <span className="text-[#F97316]">·</span> Sunrise Coffee
+            Pulse <span className="text-[#F97316]">·</span> Costco Wholesale
           </h1>
           <p className="text-xs text-gray-500 mt-0.5">AI Voice Concierge — Live Dashboard</p>
         </div>

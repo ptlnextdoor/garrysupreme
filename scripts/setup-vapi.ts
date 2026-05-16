@@ -18,7 +18,7 @@ async function main() {
   console.log('Creating Vapi assistant...')
 
   const payload = {
-    name: 'Pulse — Sunrise Coffee',
+    name: 'Pulse — Costco Wholesale',
     model: {
       provider: 'openai',
       model: 'gpt-4o',
@@ -31,8 +31,8 @@ async function main() {
     },
     serverUrl: `${RAILWAY_URL}/api/vapi-webhook`,
     serverUrlSecret: process.env.VAPI_SECRET,
-    firstMessage: "Hey! Welcome to Sunrise Coffee. What can I get started for you today?",
-    endCallMessage: "Thanks for calling Sunrise Coffee! Your order's being prepared. See you soon!",
+    firstMessage: "Hey! Thanks for calling Costco. Doing a quick run today, or stocking up?",
+    endCallMessage: "Thanks for calling Costco! Your order will be ready for pickup soon.",
     transcriber: {
       provider: 'deepgram',
       model: 'nova-2',

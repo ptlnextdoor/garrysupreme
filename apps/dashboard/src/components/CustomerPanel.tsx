@@ -3,14 +3,16 @@
 import type { CustomerProfile } from '../lib/types'
 
 const MOCK_CUSTOMER: CustomerProfile = {
-  phone: '+11234567890',
+  phone: '+17028619093',
   name: 'Aarya',
-  likes: ['oat milk', 'matcha', 'less sweet'],
-  avoids: ['dairy'],
-  style: 'Calls weekday mornings. Direct and friendly.',
-  lastOrder: 'Oat Milk Latte + Cold Brew',
+  likes: ['Kirkland brand', 'organic', 'dairy-free', 'bulk', 'salmon'],
+  avoids: ['dairy', 'processed snacks'],
+  style: 'Executive member since 2021. Manages household of 4. Direct shopper.',
+  lastOrder: 'Stanley Quencher Tumbler (gift for Mom)',
   householdMembers: [
-    { name: 'Mom', preferences: ['Chai Latte', 'oat milk', 'extra spiced'] },
+    { name: 'Mom', preferences: ['Vitamin D3', 'Cold Brew', 'Kerrygold butter'] },
+    { name: 'Partner', preferences: ['AirPods Pro', 'organic chicken', 'tech'] },
+    { name: 'Kids (5 & 8)', preferences: ['Goldfish', 'fruit snacks', 'bananas'] },
   ],
 }
 

@@ -4,7 +4,7 @@ import { GBrainClient, CompanyBrain, CustomerBrain } from '@pulse/gbrain'
 import { parseSession, rankMenu } from '@pulse/scorer'
 import type { CustomerProfile, MenuItem } from '@pulse/types'
 
-const COMPANY_SLUG = 'sunrise-coffee'
+const COMPANY_SLUG = 'costco'
 const ANONYMOUS_PROFILE: CustomerProfile = {
   phone: 'anonymous',
   name: 'there',
@@ -96,7 +96,7 @@ const contextRoute: FastifyPluginAsync = async (app: FastifyInstance) => {
     return reply.send({
       customer,
       company: {
-        name: 'Sunrise Coffee',
+        name: 'Costco Wholesale',
         slug: COMPANY_SLUG,
         menu: rankedMenu,
         rules: policies,
