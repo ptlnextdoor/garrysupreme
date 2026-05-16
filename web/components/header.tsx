@@ -44,15 +44,8 @@ export function Header() {
         }`}
       >
         <div className="flex items-center justify-between">
-          <a href="#" onClick={handleLogoClick} className="flex items-center gap-2 cursor-pointer">
-            <img src="/logo.svg" alt="hey, G! logo" className="w-7 h-7" />
-            <span
-              className={`text-lg font-semibold tracking-tight transition-colors duration-300 ${
-                isScrolled ? "text-black" : "text-foreground"
-              }`}
-            >
-              hey, G!
-            </span>
+          <a href="#" onClick={handleLogoClick} className="flex items-center cursor-pointer">
+            <img src="/logo.svg" alt="hey, G!" className="h-9 w-auto" />
           </a>
 
           <nav className="hidden md:flex items-center gap-8">

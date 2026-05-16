@@ -19,9 +19,8 @@ export function DashboardSidebar() {
   return (
     <aside className="hidden md:flex md:flex-col w-60 shrink-0 border-r border-border bg-card h-screen sticky top-0">
       <div className="px-5 py-5 border-b border-border">
-        <Link href="/" className="flex items-center gap-2">
-          <img src="/logo.svg" alt="hey, G! logo" className="w-7 h-7" />
-          <span className="font-semibold tracking-tight">hey, G!</span>
+        <Link href="/" className="flex items-center">
+          <img src="/logo.svg" alt="hey, G!" className="h-9 w-auto" />
         </Link>
       </div>
 
