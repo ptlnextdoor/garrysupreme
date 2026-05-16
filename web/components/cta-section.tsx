@@ -4,15 +4,6 @@ import { TransitionLink } from "./transition-link"
 export function CTASection() {
   return (
     <section className="py-32 px-6 relative overflow-hidden bg-background">
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-        <span
-          className="text-[20vw] font-bold tracking-tighter leading-none text-zinc-100 whitespace-nowrap"
-          style={{ fontFamily: "var(--font-playfair)" }}
-        >
-          ANSWER
-        </span>
-      </div>
-
       <div className="max-w-5xl mx-auto relative z-10 text-center">
         <h2
           className="text-4xl md:text-6xl font-normal leading-tight max-w-4xl mx-auto mb-6 text-balance"

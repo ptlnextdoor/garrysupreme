@@ -12,7 +12,7 @@ export default function SettingsPage() {
   return (
     <>
       <DashboardTopbar title="Settings" subtitle="Tune your dashboard to taste." />
-      <div className="p-6 lg:p-10 mx-auto max-w-5xl w-full space-y-6">
+      <div className="p-6 lg:px-12 lg:py-10 w-full space-y-6">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Background palette</CardTitle>

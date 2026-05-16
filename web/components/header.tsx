@@ -41,13 +41,13 @@ export function Header() {
       <div
         className={`max-w-7xl mx-auto transition-all duration-300 rounded-2xl ${
           isScrolled
-            ? "bg-white/70 backdrop-blur-xl border border-zinc-200 px-6 py-3"
+            ? "bg-background/70 backdrop-blur-xl border border-border px-6 py-3"
             : "bg-background/90 backdrop-blur-md px-6 py-5"
         }`}
       >
         <div className="flex items-center justify-between">
           <a href="#" onClick={handleLogoClick} className="flex items-center cursor-pointer">
-            <HeyGMark className="text-xl text-black heyg-logo-shared" />
+            <HeyGMark className="text-xl text-foreground heyg-logo-shared" />
           </a>
 
           <nav className="hidden md:flex items-center gap-8">
@@ -55,7 +55,7 @@ export function Header() {
               href="#how-it-works"
               onClick={(e) => handleSmoothScroll(e, "how-it-works")}
               className={`text-sm transition-colors cursor-pointer ${
-                isScrolled ? "text-zinc-600 hover:text-black" : "text-muted-foreground hover:text-foreground"
+                isScrolled ? "text-muted-foreground hover:text-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               How it works
@@ -64,7 +64,7 @@ export function Header() {
               href="#features"
               onClick={(e) => handleSmoothScroll(e, "features")}
               className={`text-sm transition-colors cursor-pointer ${
-                isScrolled ? "text-zinc-600 hover:text-black" : "text-muted-foreground hover:text-foreground"
+                isScrolled ? "text-muted-foreground hover:text-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Features
@@ -73,7 +73,7 @@ export function Header() {
               href="#pricing"
               onClick={(e) => handleSmoothScroll(e, "pricing")}
               className={`text-sm transition-colors cursor-pointer ${
-                isScrolled ? "text-zinc-600 hover:text-black" : "text-muted-foreground hover:text-foreground"
+                isScrolled ? "text-muted-foreground hover:text-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Pricing
@@ -82,7 +82,7 @@ export function Header() {
               href="#faq"
               onClick={(e) => handleSmoothScroll(e, "faq")}
               className={`text-sm transition-colors cursor-pointer ${
-                isScrolled ? "text-zinc-600 hover:text-black" : "text-muted-foreground hover:text-foreground"
+                isScrolled ? "text-muted-foreground hover:text-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               FAQ
@@ -90,7 +90,7 @@ export function Header() {
             <TransitionLink
               href="/dashboard"
               className={`text-sm transition-colors cursor-pointer ${
-                isScrolled ? "text-zinc-600 hover:text-black" : "text-muted-foreground hover:text-foreground"
+                isScrolled ? "text-muted-foreground hover:text-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Dashboard
@@ -101,17 +101,17 @@ export function Header() {
             <TransitionLink
               href="/dashboard"
               className={`relative flex items-center gap-0 border rounded-full pl-5 pr-1 py-1 transition-all duration-300 group overflow-hidden ${
-                isScrolled ? "border-zinc-300" : "border-border"
+                isScrolled ? "border-border" : "border-border"
               }`}
             >
               <span
                 className={`absolute inset-0 rounded-full scale-x-0 origin-right group-hover:scale-x-100 transition-transform duration-300 ${
-                  isScrolled ? "bg-black" : "bg-foreground"
+                  isScrolled ? "bg-foreground" : "bg-foreground"
                 }`}
               />
               <span
                 className={`text-sm pr-3 relative z-10 transition-colors duration-300 ${
-                  isScrolled ? "text-black group-hover:text-white" : "text-foreground group-hover:text-background"
+                  isScrolled ? "text-foreground group-hover:text-background" : "text-foreground group-hover:text-background"
                 }`}
               >
                 See the demo
@@ -119,12 +119,12 @@ export function Header() {
               <span className="w-8 h-8 rounded-full flex items-center justify-center relative z-10">
                 <ArrowRight
                   className={`w-4 h-4 group-hover:opacity-0 absolute transition-opacity duration-300 ${
-                    isScrolled ? "text-black" : "text-foreground"
+                    isScrolled ? "text-foreground" : "text-foreground"
                   }`}
                 />
                 <ArrowUpRight
                   className={`w-4 h-4 opacity-0 group-hover:opacity-100 transition-all duration-300 ${
-                    isScrolled ? "text-black group-hover:text-white" : "text-foreground group-hover:text-background"
+                    isScrolled ? "text-foreground group-hover:text-background" : "text-foreground group-hover:text-background"
                   }`}
                 />
               </span>
@@ -132,7 +132,7 @@ export function Header() {
           </div>
 
           <button
-            className={`md:hidden transition-colors duration-300 ${isScrolled ? "text-black" : "text-foreground"}`}
+            className={`md:hidden transition-colors duration-300 ${isScrolled ? "text-foreground" : "text-foreground"}`}
             onClick={() => setIsOpen(!isOpen)}
             aria-label="Toggle menu"
           >
@@ -143,22 +143,22 @@ export function Header() {
         {isOpen && (
           <nav
             className={`md:hidden mt-6 pb-6 flex flex-col gap-4 border-t pt-6 ${
-              isScrolled ? "border-zinc-200" : "border-border"
+              isScrolled ? "border-border" : "border-border"
             }`}
           >
-            <a href="#how-it-works" onClick={(e) => handleSmoothScroll(e, "how-it-works")} className="text-zinc-600">
+            <a href="#how-it-works" onClick={(e) => handleSmoothScroll(e, "how-it-works")} className="text-muted-foreground">
               How it works
             </a>
-            <a href="#features" onClick={(e) => handleSmoothScroll(e, "features")} className="text-zinc-600">
+            <a href="#features" onClick={(e) => handleSmoothScroll(e, "features")} className="text-muted-foreground">
               Features
             </a>
-            <a href="#pricing" onClick={(e) => handleSmoothScroll(e, "pricing")} className="text-zinc-600">
+            <a href="#pricing" onClick={(e) => handleSmoothScroll(e, "pricing")} className="text-muted-foreground">
               Pricing
             </a>
-            <a href="#faq" onClick={(e) => handleSmoothScroll(e, "faq")} className="text-zinc-600">
+            <a href="#faq" onClick={(e) => handleSmoothScroll(e, "faq")} className="text-muted-foreground">
               FAQ
             </a>
-            <TransitionLink href="/dashboard" className="text-zinc-600">
+            <TransitionLink href="/dashboard" className="text-muted-foreground">
               Dashboard
             </TransitionLink>
           </nav>

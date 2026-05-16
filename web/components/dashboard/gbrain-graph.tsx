@@ -80,11 +80,11 @@ export function GBrainGraph() {
           variant="outline"
           size="sm"
         >
-          <ToggleGroupItem value="all">All · {gbrain.nodes.length}</ToggleGroupItem>
-          <ToggleGroupItem value="customer">Customers · {counts.customer}</ToggleGroupItem>
-          <ToggleGroupItem value="menu">Menu · {counts.menu}</ToggleGroupItem>
-          <ToggleGroupItem value="preference">Preferences · {counts.preference}</ToggleGroupItem>
-          <ToggleGroupItem value="insight">Insights · {counts.insight}</ToggleGroupItem>
+          <ToggleGroupItem value="all" className="px-3">All · {gbrain.nodes.length}</ToggleGroupItem>
+          <ToggleGroupItem value="customer" className="px-3">Customers · {counts.customer}</ToggleGroupItem>
+          <ToggleGroupItem value="menu" className="px-3">Menu · {counts.menu}</ToggleGroupItem>
+          <ToggleGroupItem value="preference" className="px-3">Preferences · {counts.preference}</ToggleGroupItem>
+          <ToggleGroupItem value="insight" className="px-3">Insights · {counts.insight}</ToggleGroupItem>
         </ToggleGroup>
 
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
