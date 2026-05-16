@@ -5,7 +5,7 @@ interface ActiveCall {
   callId: string
   phone: string
   customerName: string
-  startedAt: string
+  startedAt: number
 }
 
 // In-memory active calls map — shared with vapi-webhook

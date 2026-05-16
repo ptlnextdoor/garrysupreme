@@ -29,6 +29,9 @@ Friendly and direct. Calls on weekday mornings. Appreciates when her preferences
 3. **2026-05-14** — Matcha Latte (oat milk, less sweet)
 4. **2026-05-15** — Oat Milk Latte + Cold Brew (for a colleague)
 5. **2026-05-16** — Matcha Latte
+6. **2026-05-16** — Cold Brew
+7. **2026-05-16** — Iced Chai Latte, oat milk
+8. **2026-05-16** — Oat Milk Latte
 
 ## Household Members
 - **Mom**: Chai Latte, oat milk, extra spiced, no modifications
