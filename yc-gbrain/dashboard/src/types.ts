@@ -34,7 +34,7 @@ export type ActiveCall = {
   customerName: string;
   phone: string;
   startedAt: string;
-  status: "context loaded" | "ordering" | "confirmed" | "escalated";
+  status: "ringing" | "context loaded" | "ordering" | "confirmed" | "escalated" | "ended";
   intent: string;
   transcript: string[];
   currentOrder: string[];
@@ -46,7 +46,7 @@ export type MemoryCandidate = {
   claim: string;
   evidence: string;
   confidence: number;
-  status: "pending" | "approved";
+  status: "pending" | "approved" | "rejected";
 };
 
 export type Order = {

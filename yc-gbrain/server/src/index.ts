@@ -1,8 +1,8 @@
 import cors from "@fastify/cors";
 import websocket from "@fastify/websocket";
-import Fastify from "fastify";
-import { z } from "zod";
-import { approveMemory, getContext, getDashboard, saveOrder } from "./store.js";
+import Fastify, { type FastifyRequest } from "fastify";
+import { z, ZodError } from "zod";
+import { approveMemory, endDemoCall, getContext, getDashboard, learnPreference, rejectMemory, resetDemo, saveOrder, startDemoCall } from "./store.js";
 import { extractToolArguments, vapiToolResponse } from "./vapi.js";
 
 const app = Fastify({
@@ -21,6 +21,16 @@ await app.register(cors, {
 });
 await app.register(websocket);
 
+app.setErrorHandler((error, _request, reply) => {
+  if (error instanceof ZodError) {
+    return reply.code(400).send({ error: "Invalid request", issues: error.issues });
+  }
+
+  const statusCode = typeof error === "object" && error !== null && "statusCode" in error && typeof error.statusCode === "number" ? error.statusCode : 500;
+  const message = error instanceof Error ? error.message : "Internal Server Error";
+  return reply.code(statusCode).send({ error: message });
+});
+
 function broadcast(event: string, payload: unknown) {
   const message = JSON.stringify({ event, payload });
   for (const client of clients) {
@@ -29,6 +39,16 @@ function broadcast(event: string, payload: unknown) {
     } catch {
       clients.delete(client);
     }
+  }
+}
+
+function requireDemoToken(request: FastifyRequest) {
+  const expected = process.env.PULSE_DEMO_TOKEN;
+  if (!expected) return;
+
+  const provided = request.headers["x-pulse-demo-token"] ?? (request.query as { token?: string } | undefined)?.token;
+  if (provided !== expected) {
+    throw Object.assign(new Error("Invalid demo token"), { statusCode: 401 });
   }
 }
 
@@ -54,6 +74,7 @@ app.get("/api/customers/:id", async (request, reply) => {
 });
 
 app.post("/api/context", async (request) => {
+  requireDemoToken(request);
   const args = extractToolArguments(request.body);
   const schema = z.object({
     phone_number: z.string().optional().default("unknown"),
@@ -66,16 +87,18 @@ app.post("/api/context", async (request) => {
     customer: result.customer.name,
     request: parsed.request
   });
+  broadcast("dashboard_updated", await getDashboard());
 
   return vapiToolResponse(request.body, result);
 });
 
 app.post("/api/save_order", async (request) => {
+  requireDemoToken(request);
   const args = extractToolArguments(request.body);
   const schema = z.object({
     customer_name: z.string().optional(),
     phone_number: z.string().optional(),
-    items: z.array(z.string()).default([]),
+    items: z.array(z.string()).min(1),
     new_preferences: z.array(z.string()).default([]),
     confidence: z.number().optional()
   });
@@ -89,6 +112,7 @@ app.post("/api/save_order", async (request) => {
 });
 
 app.post("/api/learn", async (request) => {
+  requireDemoToken(request);
   const args = extractToolArguments(request.body);
   const schema = z.object({
     customer_name: z.string().default("unknown customer"),
@@ -96,17 +120,14 @@ app.post("/api/learn", async (request) => {
     confidence: z.number().default(0.65)
   });
   const parsed = schema.parse(args);
-  const order = await saveOrder({
-    customer_name: parsed.customer_name,
-    items: [],
-    new_preferences: [parsed.preference],
-    confidence: parsed.confidence
-  });
-  broadcast("memory_learned", order);
-  return { ok: true, order };
+  const memory = await learnPreference(parsed.customer_name, parsed.preference, parsed.confidence);
+  broadcast("memory_learned", memory);
+  broadcast("dashboard_updated", await getDashboard());
+  return { ok: true, memory };
 });
 
 app.post("/api/memory/approve", async (request, reply) => {
+  requireDemoToken(request);
   const schema = z.object({ id: z.string() });
   const parsed = schema.parse(request.body);
   const memory = await approveMemory(parsed.id);
@@ -114,6 +135,55 @@ app.post("/api/memory/approve", async (request, reply) => {
   broadcast("memory_approved", memory);
   broadcast("dashboard_updated", await getDashboard());
   return { ok: true, memory };
+});
+
+app.post("/api/memory/reject", async (request, reply) => {
+  requireDemoToken(request);
+  const schema = z.object({ id: z.string() });
+  const parsed = schema.parse(request.body);
+  const memory = await rejectMemory(parsed.id);
+  if (!memory) return reply.code(404).send({ error: "Memory candidate not found" });
+  broadcast("memory_rejected", memory);
+  broadcast("dashboard_updated", await getDashboard());
+  return { ok: true, memory };
+});
+
+app.post("/api/demo/start_call", async (request) => {
+  requireDemoToken(request);
+  const call = await startDemoCall();
+  broadcast("demo_call_started", call);
+  broadcast("dashboard_updated", await getDashboard());
+  return { ok: true, call };
+});
+
+app.post("/api/demo/end_call", async (request) => {
+  requireDemoToken(request);
+  const call = await endDemoCall();
+  broadcast("demo_call_ended", call);
+  broadcast("dashboard_updated", await getDashboard());
+  return { ok: true, call };
+});
+
+app.post("/api/demo/reset", async (request) => {
+  requireDemoToken(request);
+  const dashboard = await resetDemo();
+  broadcast("demo_reset", dashboard);
+  broadcast("dashboard_updated", dashboard);
+  return { ok: true, dashboard };
+});
+
+app.post("/api/vapi/webhook", async (request) => {
+  requireDemoToken(request);
+  const body = request.body as Record<string, unknown>;
+  const message = typeof body.message === "object" && body.message !== null ? body.message as Record<string, unknown> : {};
+  const event = String(body.type ?? body.event ?? message.type ?? "unknown");
+
+  if (event.includes("call-start")) await startDemoCall();
+  if (event.includes("end")) await endDemoCall();
+
+  broadcast("vapi_webhook", { event, body });
+  broadcast("dashboard_updated", await getDashboard());
+  return { ok: true };
 });
 
 const port = Number(process.env.PORT ?? 3001);

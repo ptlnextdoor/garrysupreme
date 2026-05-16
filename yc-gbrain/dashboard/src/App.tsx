@@ -1,5 +1,5 @@
 import { useEffect, useState, useTransition } from "react";
-import { approveMemory, demoGetContext, demoSaveOrder, fetchDashboard } from "./api";
+import { approveMemory, demoGetContext, demoSaveOrder, endDemoCall, fetchDashboard, rejectMemory, resetDemo, startDemoCall } from "./api";
 import type { ActiveCall, Customer, DashboardData, MemoryCandidate } from "./types";
 
 const fallback: DashboardData = {
@@ -31,6 +31,7 @@ function statusClass(status: ActiveCall["status"]) {
   if (status === "confirmed") return "success";
   if (status === "escalated") return "danger";
   if (status === "ordering") return "active";
+  if (status === "ringing") return "active";
   return "quiet";
 }
 
@@ -92,6 +93,26 @@ export default function App() {
   async function approve(id: string) {
     await approveMemory(id);
     await reload();
+    setEventLog((current) => ["Customer Brain updated from approved memory.", ...current].slice(0, 6));
+  }
+
+  async function reject(id: string) {
+    await rejectMemory(id);
+    await reload();
+    setEventLog((current) => ["Memory candidate rejected.", ...current].slice(0, 6));
+  }
+
+  async function runDemoAction(action: "start" | "end" | "reset") {
+    setError(null);
+    try {
+      if (action === "start") await startDemoCall();
+      if (action === "end") await endDemoCall();
+      if (action === "reset") await resetDemo();
+      await reload();
+      setEventLog((current) => [`Demo ${action} complete.`, ...current].slice(0, 6));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : `Demo ${action} failed`);
+    }
   }
 
   return (
@@ -104,8 +125,10 @@ export default function App() {
             <h1>Phone concierge with memory</h1>
           </div>
           <div className="topbar-actions">
+            <button className="ghost-button" onClick={() => runDemoAction("start")} disabled={isPending}>Start call</button>
             <button className="ghost-button" onClick={runContextDemo} disabled={isPending}>Simulate context</button>
             <button className="primary-button" onClick={runOrderDemo} disabled={isPending}>Confirm demo order</button>
+            <button className="ghost-button" onClick={() => runDemoAction("reset")} disabled={isPending}>Reset</button>
           </div>
         </header>
 
@@ -117,7 +140,7 @@ export default function App() {
           <LiveCalls calls={data.activeCalls} selectedCallId={selectedCall?.id} onSelect={setSelectedCallId} />
           {selectedCall && <CallDetail call={selectedCall} />}
           {primaryCustomer && <CustomerCard customer={primaryCustomer} />}
-          <MemoryQueue memories={pendingMemories} onApprove={approve} />
+          <MemoryQueue memories={pendingMemories} onApprove={approve} onReject={reject} />
           <CompanyBrain data={data} />
           <EventLog entries={eventLog} />
         </div>
@@ -210,8 +233,8 @@ function CallDetail({ call }: { call: ActiveCall }) {
         {call.currentOrder.length ? call.currentOrder.map((item) => <strong key={item}>{item}</strong>) : <strong>No order yet</strong>}
       </div>
       <div className="transcript">
-        {call.transcript.map((line) => (
-          <p key={line}>{line}</p>
+        {call.transcript.map((line, index) => (
+          <p key={`${index}-${line}`}>{line}</p>
         ))}
       </div>
     </section>
@@ -255,7 +278,7 @@ function TagGroup({ title, items, tone }: { title: string; items: string[]; tone
   );
 }
 
-function MemoryQueue({ memories, onApprove }: { memories: MemoryCandidate[]; onApprove: (id: string) => void }) {
+function MemoryQueue({ memories, onApprove, onReject }: { memories: MemoryCandidate[]; onApprove: (id: string) => void; onReject: (id: string) => void }) {
   return (
     <section className="panel memory-panel" id="memory-review">
       <div className="panel-heading">
@@ -268,7 +291,10 @@ function MemoryQueue({ memories, onApprove }: { memories: MemoryCandidate[]; onA
             <strong>{memory.claim}</strong>
             <p>{memory.evidence}</p>
           </div>
-          <button onClick={() => onApprove(memory.id)}>Approve</button>
+          <div className="memory-actions">
+            <button onClick={() => onApprove(memory.id)}>Approve</button>
+            <button className="reject-button" onClick={() => onReject(memory.id)}>Reject</button>
+          </div>
         </article>
       ))}
     </section>

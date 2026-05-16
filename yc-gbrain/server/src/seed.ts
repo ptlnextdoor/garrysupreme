@@ -27,7 +27,7 @@ export type MemoryCandidate = {
   claim: string;
   evidence: string;
   confidence: number;
-  status: "pending" | "approved";
+  status: "pending" | "approved" | "rejected";
 };
 
 export type ActiveCall = {
@@ -35,7 +35,7 @@ export type ActiveCall = {
   customerName: string;
   phone: string;
   startedAt: string;
-  status: "context loaded" | "ordering" | "confirmed" | "escalated";
+  status: "ringing" | "context loaded" | "ordering" | "confirmed" | "escalated" | "ended";
   intent: string;
   transcript: string[];
   currentOrder: string[];
@@ -127,14 +127,11 @@ export const activeCalls: ActiveCall[] = [
     id: "call_live_aayushya",
     customerName: "Aayushya",
     phone: "+15551234567",
-    startedAt: new Date(Date.now() - 4 * 60_000).toISOString(),
-    status: "ordering",
-    intent: "Cold, sweet, not too heavy, no dairy",
-    transcript: [
-      "Caller: I want something cold, sweet, not too heavy, no dairy.",
-      "Pulse: Best match is an iced chai with oat milk and extra cardamom."
-    ],
-    currentOrder: ["Iced Chai Latte, oat milk, cardamom"]
+    startedAt: new Date().toISOString(),
+    status: "ringing",
+    intent: "Ready for demo call",
+    transcript: ["Pulse: Waiting for Aayushya to call Sunrise Coffee."],
+    currentOrder: []
   },
   {
     id: "call_live_catering",

@@ -530,6 +530,20 @@ h2 {
   background: var(--sage);
 }
 
+.memory-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.memory-actions button {
+  flex: 1;
+}
+
+.memory-actions .reject-button {
+  color: var(--danger);
+  background: #f6d7ca;
+}
+
 .menu-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
