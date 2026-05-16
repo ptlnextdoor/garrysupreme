@@ -96,3 +96,41 @@ html {
     @apply bg-background text-foreground;
   }
 }
+
+/* Native View Transitions — slower, eased cross-fade between routes */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-group(root) {
+  animation-duration: 0.45s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+::view-transition-old(root) {
+  animation: vt-fade-out 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+::view-transition-new(root) {
+  animation: vt-fade-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes vt-fade-out {
+  to {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+}
+
+@keyframes vt-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(1.015);
+  }
+}
+
+/* The hey, G! wordmark in the landing header and dashboard sidebar share
+   the same name so the browser morphs one into the other across nav. */
+.heyg-logo-shared {
+  view-transition-name: heyg-logo;
+}
