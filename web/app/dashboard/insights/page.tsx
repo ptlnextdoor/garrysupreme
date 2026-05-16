@@ -22,29 +22,31 @@ export default function InsightsPage() {
   return (
     <>
       <DashboardTopbar title="Insights" subtitle="What hey, G! learned about your business this week." />
-      <div className="p-6 lg:p-10 mx-auto max-w-7xl w-full space-y-5">
-        <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div className="p-6 lg:p-10 mx-auto max-w-7xl w-full space-y-6">
+        <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
           {insights.map((i) => {
             const Icon = iconFor(i.kind)
             return (
-              <Card key={i.id}>
-                <CardHeader className="pb-3">
+              <Card key={i.id} className="p-3">
+                <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
                     <div
-                      className={`w-9 h-9 rounded-lg flex items-center justify-center ${colorFor(i.kind)}`}
+                      className={`w-12 h-12 rounded-xl flex items-center justify-center ${colorFor(i.kind)}`}
                     >
-                      <Icon className="w-4 h-4" />
+                      <Icon className="w-5 h-5" />
                     </div>
-                    <Badge variant="secondary" className="capitalize">
+                    <Badge variant="secondary" className="capitalize text-xs">
                       {i.kind}
                     </Badge>
                   </div>
-                  <CardTitle className="text-base font-medium mt-3">{i.title}</CardTitle>
+                  <CardTitle className="text-xl font-medium mt-4 leading-snug">{i.title}</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{i.body}</p>
+                <CardContent className="space-y-4">
+                  <p className="text-base text-muted-foreground leading-relaxed">{i.body}</p>
                   {i.metric && (
-                    <div className="mt-3 text-xs font-medium text-foreground/80">{i.metric}</div>
+                    <div className="inline-block text-sm font-medium text-primary bg-primary/10 rounded-full px-3 py-1">
+                      {i.metric}
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -53,7 +55,7 @@ export default function InsightsPage() {
         </div>
 
         <Card className="bg-muted/40 border-dashed">
-          <CardContent className="p-5 text-sm text-muted-foreground">
+          <CardContent className="p-6 text-base text-muted-foreground">
             Insights regenerate every night during the GBrain "dream cycle" — patterns are surfaced from the past 7
             days of call transcripts.
           </CardContent>
