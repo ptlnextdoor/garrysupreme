@@ -1,9 +1,10 @@
+import Image from "next/image"
 import type { CSSProperties } from "react"
 
 /**
- * Plain typographic "hey, G!" wordmark. No SVG, no positioning tricks —
- * just styled text. Size is controlled by the parent's font-size via
- * className / style.
+ * hey, G! logo mark. Renders the wordmark image. Size is driven by the
+ * parent's font-size (1em square), so existing call sites that used
+ * `text-xl` etc. still work without code changes.
  */
 export function HeyGMark({
   className,
@@ -16,17 +17,25 @@ export function HeyGMark({
     <span
       className={className}
       style={{
-        fontFamily: "var(--font-playfair)",
-        fontStyle: "italic",
-        fontWeight: 600,
-        letterSpacing: "-0.03em",
+        display: "inline-flex",
+        alignItems: "center",
         lineHeight: 1,
-        whiteSpace: "nowrap",
-        display: "inline-block",
         ...style,
       }}
     >
-      hey, G!
+      <Image
+        src="/heyg-logo.png"
+        alt="hey, G!"
+        width={64}
+        height={64}
+        priority
+        style={{
+          height: "1.6em",
+          width: "1.6em",
+          objectFit: "contain",
+          display: "block",
+        }}
+      />
     </span>
   )
 }
