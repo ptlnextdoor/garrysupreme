@@ -4,14 +4,19 @@
   "version": "0.1.0",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "yc-gbrain/server",
+    "yc-gbrain/dashboard"
   ],
   "scripts": {
     "dev": "pnpm --parallel --stream -r dev",
+    "dev:pulse": "concurrently -n backend,dashboard -c green,yellow \"npx tsx apps/backend/src/index.ts\" \"npm -C apps/dashboard run dev\"",
+    "dev:yc": "concurrently -n api,dashboard -c green,yellow \"npm --workspace @pulse/server run dev\" \"npm --workspace @pulse/dashboard run dev\"",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck"
   },
   "devDependencies": {
+    "concurrently": "^9.2.1",
     "tsx": "^4.22.0",
     "typescript": "^5.4.5"
   },

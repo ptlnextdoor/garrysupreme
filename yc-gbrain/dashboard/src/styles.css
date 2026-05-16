@@ -1,0 +1,643 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@500;600;700;800&display=swap");
+
+:root {
+  --paper: #f6edda;
+  --paper-strong: #fff8ea;
+  --ink: #2b180f;
+  --muted: #7f654e;
+  --espresso: #3a2115;
+  --coffee: #74431f;
+  --saffron: #dd8d28;
+  --sage: #3f8f70;
+  --mint: #d8ead7;
+  --danger: #b94a34;
+  --line: rgba(62, 36, 19, 0.14);
+  --shadow: 0 24px 70px rgba(63, 38, 18, 0.16);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 1120px;
+  color: var(--ink);
+  font-family: "Manrope", "Avenir Next", sans-serif;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(221, 141, 40, 0.22), transparent 34rem),
+    radial-gradient(circle at 86% 8%, rgba(63, 143, 112, 0.18), transparent 30rem),
+    linear-gradient(135deg, #f8efdd 0%, #efe0c4 100%);
+}
+
+body::before {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  opacity: 0.14;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+}
+
+button {
+  font: inherit;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 268px minmax(0, 1fr);
+  min-height: 100vh;
+  padding: 22px;
+  gap: 22px;
+}
+
+.sidebar {
+  position: sticky;
+  top: 22px;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 44px);
+  padding: 24px;
+  color: #fff5e3;
+  background:
+    linear-gradient(180deg, rgba(58, 33, 21, 0.98), rgba(38, 21, 14, 0.96)),
+    var(--espresso);
+  border-radius: 34px;
+  box-shadow: var(--shadow);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 34px;
+}
+
+.brand-mark {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  color: var(--espresso);
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 26px;
+  background: linear-gradient(135deg, var(--saffron), #f3ca73);
+  border-radius: 16px;
+}
+
+.brand strong,
+.customer-hero strong,
+.metric-card strong,
+.order-box strong,
+.menu-grid strong,
+.memory-card strong {
+  display: block;
+}
+
+.brand span {
+  display: block;
+  margin-top: 2px;
+  color: rgba(255, 245, 227, 0.62);
+  font-size: 12px;
+}
+
+nav {
+  display: grid;
+  gap: 8px;
+}
+
+nav a {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 13px 12px;
+  color: rgba(255, 245, 227, 0.72);
+  text-decoration: none;
+  border-radius: 16px;
+}
+
+nav a span {
+  width: 8px;
+  height: 8px;
+  background: currentColor;
+  border-radius: 999px;
+}
+
+nav a.selected {
+  color: #fff6e6;
+  background: rgba(255, 246, 230, 0.1);
+}
+
+.sidebar-card {
+  display: grid;
+  gap: 10px;
+  margin-top: auto;
+  padding: 16px;
+  background: rgba(255, 246, 230, 0.08);
+  border: 1px solid rgba(255, 246, 230, 0.12);
+  border-radius: 22px;
+}
+
+.sidebar-card p {
+  margin: 0;
+  color: #f9d597;
+  font-weight: 800;
+}
+
+.sidebar-card code {
+  color: rgba(255, 246, 230, 0.72);
+  font-size: 12px;
+}
+
+  .workspace {
+    min-width: 0;
+    position: relative;
+    z-index: 1;
+    display: grid;
+  align-content: start;
+  gap: 18px;
+}
+
+.topbar,
+.metric-row,
+.dashboard-grid {
+  min-width: 0;
+  width: min(1160px, 100%);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 4px 8px;
+}
+
+.section-label {
+  margin: 0 0 5px;
+  color: var(--coffee);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+h1,
+h2 {
+  margin: 0;
+  font-family: "Fraunces", Georgia, serif;
+  letter-spacing: -0.04em;
+}
+
+h1 {
+  font-size: clamp(42px, 5vw, 72px);
+  line-height: 0.9;
+}
+
+h2 {
+  font-size: 25px;
+}
+
+.topbar-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.primary-button,
+.ghost-button,
+.memory-card button {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.primary-button {
+  color: #fff9ed;
+  background: var(--espresso);
+  box-shadow: 0 12px 28px rgba(58, 33, 21, 0.24);
+}
+
+.ghost-button {
+  color: var(--espresso);
+  background: rgba(255, 248, 234, 0.62);
+  border: 1px solid var(--line);
+}
+
+.error-strip {
+  width: min(1160px, 100%);
+  padding: 12px 16px;
+  color: #fff7ef;
+  background: var(--danger);
+  border-radius: 16px;
+}
+
+.metric-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.metric-card,
+.panel {
+  background: rgba(255, 248, 234, 0.74);
+  border: 1px solid rgba(95, 59, 31, 0.14);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.metric-card {
+  padding: 18px;
+  border-radius: 24px;
+}
+
+.metric-card span,
+.panel-heading span,
+.order-box span,
+.tag-group > span,
+.last-order span,
+.memory-card p,
+.menu-grid small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.metric-card strong {
+  margin: 8px 0 4px;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 38px;
+  line-height: 1;
+}
+
+.metric-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr 0.95fr;
+  grid-template-areas:
+    "calls detail customer"
+    "memory company customer"
+    "memory company events";
+  gap: 16px;
+  padding-bottom: 28px;
+}
+
+.panel {
+  padding: 20px;
+  border-radius: 30px;
+}
+
+.panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.live-calls {
+  grid-area: calls;
+}
+
+.call-detail {
+  grid-area: detail;
+  min-height: 312px;
+  background:
+    linear-gradient(135deg, rgba(63, 143, 112, 0.15), transparent 55%),
+    rgba(255, 248, 234, 0.78);
+}
+
+.customer-card {
+  grid-area: customer;
+}
+
+.memory-panel {
+  grid-area: memory;
+}
+
+.company-panel {
+  grid-area: company;
+}
+
+.event-panel {
+  grid-area: events;
+}
+
+.pulse-dot {
+  color: var(--sage) !important;
+}
+
+.call-list {
+  display: grid;
+  gap: 10px;
+}
+
+.call-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  width: 100%;
+  padding: 14px;
+  text-align: left;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.38);
+  border: 1px solid transparent;
+  border-radius: 20px;
+}
+
+.selected-call {
+  background: #fff6e7;
+  border-color: rgba(221, 141, 40, 0.34);
+}
+
+.call-row p,
+.intent,
+.transcript p,
+.customer-hero p,
+.last-order p,
+.menu-grid p,
+.event-panel p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.call-row em {
+  color: var(--coffee);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.status-dot {
+  width: 11px;
+  height: 11px;
+  margin-top: 5px;
+  border-radius: 999px;
+}
+
+.status-pill {
+  padding: 8px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.active,
+.success {
+  color: var(--sage) !important;
+  background: var(--mint);
+}
+
+.danger {
+  color: var(--danger) !important;
+  background: #f6d7ca;
+}
+
+.quiet {
+  color: var(--coffee) !important;
+  background: #ecd9bd;
+}
+
+.status-dot.active,
+.status-dot.success {
+  background: var(--sage);
+}
+
+.status-dot.danger {
+  background: var(--danger);
+}
+
+.status-dot.quiet {
+  background: var(--coffee);
+}
+
+.intent {
+  max-width: 520px;
+  margin-bottom: 18px;
+  font-size: 18px;
+}
+
+.order-box {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  background: #fff6e6;
+  border-radius: 22px;
+}
+
+.order-box strong {
+  color: var(--espresso);
+}
+
+.transcript {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.transcript p {
+  margin: 0;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.42);
+  border-radius: 16px;
+}
+
+.customer-hero {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 14px;
+  background: linear-gradient(135deg, #3f8f70, #76b28f);
+  border-radius: 24px;
+}
+
+.customer-hero,
+.customer-hero p {
+  color: #fff9ee;
+}
+
+.avatar {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 28px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 18px;
+}
+
+.tag-group {
+  margin-top: 18px;
+}
+
+.tag-group div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.tag-group em {
+  padding: 8px 10px;
+  color: #27634e;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+  background: var(--mint);
+  border-radius: 999px;
+}
+
+.tag-group .warning-tag {
+  color: #82442f;
+  background: #f3d6c6;
+}
+
+.last-order {
+  margin-top: 18px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.42);
+  border-radius: 20px;
+}
+
+.memory-panel {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.memory-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.45);
+  border-radius: 20px;
+}
+
+.memory-card button {
+  min-height: 38px;
+  color: #fff9ef;
+  background: var(--sage);
+}
+
+.memory-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.memory-actions button {
+  flex: 1;
+}
+
+.memory-actions .reject-button {
+  color: var(--danger);
+  background: #f6d7ca;
+}
+
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.menu-grid article {
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.44);
+  border-radius: 20px;
+}
+
+.menu-grid article div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.menu-grid article div span {
+  color: var(--coffee);
+  font-weight: 900;
+}
+
+.event-panel p {
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+@media (max-width: 900px) {
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
+  body {
+    min-width: 0;
+  }
+
+  .app-shell {
+    grid-template-columns: 1fr;
+    padding: 14px;
+  }
+
+  .sidebar {
+    position: static;
+    min-width: 0;
+    width: 100%;
+    height: auto;
+    overflow: hidden;
+  }
+
+  nav {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  h1 {
+    max-width: 100%;
+    font-size: 36px;
+    overflow-wrap: break-word;
+  }
+
+  .topbar-actions {
+    flex-direction: column;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .primary-button,
+  .ghost-button {
+    width: 100%;
+    flex: 1 1 auto;
+  }
+
+  .metric-row,
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-grid {
+    grid-template-areas:
+      "calls"
+      "detail"
+      "customer"
+      "memory"
+      "company"
+      "events";
+  }
+
+  .menu-grid {
+    grid-template-columns: 1fr;
+  }
+}
