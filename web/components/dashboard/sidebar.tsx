@@ -1,28 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import {
-  LayoutDashboard,
-  PhoneCall,
-  Users,
-  Sparkles,
-  Network,
-  ArrowLeft,
-  Settings,
-  Menu,
-} from "lucide-react"
+import { LayoutDashboard, PhoneCall, Users, Sparkles, Network, ArrowLeft, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { HeyGMark } from "@/components/heyg-mark"
 import { TransitionLink } from "@/components/transition-link"
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet"
 
 const nav = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
@@ -33,7 +16,7 @@ const nav = [
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ]
 
-function SidebarContents({ onNavigate }: { onNavigate?: () => void }) {
+export function SidebarContents({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname()
 
   return (
@@ -81,6 +64,7 @@ function SidebarContents({ onNavigate }: { onNavigate?: () => void }) {
       <div className="px-3 py-4 border-t border-border/60">
         <TransitionLink
           href="/"
+          onClick={onNavigate}
           className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -92,38 +76,9 @@ function SidebarContents({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 export function DashboardSidebar() {
-  const [open, setOpen] = useState(false)
-  const pathname = usePathname()
-
-  useEffect(() => {
-    setOpen(false)
-  }, [pathname])
-
   return (
-    <>
-      <aside className="hidden md:flex md:flex-col w-60 shrink-0 border-r border-border/60 bg-background/40 backdrop-blur-xl h-screen sticky top-0">
-        <SidebarContents />
-      </aside>
-
-      <div className="md:hidden fixed top-3 left-3 z-40">
-        <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger asChild>
-            <button
-              aria-label="Open navigation"
-              className="w-10 h-10 inline-flex items-center justify-center rounded-lg border border-border/60 bg-background/60 backdrop-blur-xl text-foreground"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-72 p-0 flex flex-col">
-            <SheetTitle className="sr-only">Dashboard navigation</SheetTitle>
-            <SheetDescription className="sr-only">
-              Jump between dashboard sections.
-            </SheetDescription>
-            <SidebarContents onNavigate={() => setOpen(false)} />
-          </SheetContent>
-        </Sheet>
-      </div>
-    </>
+    <aside className="hidden md:flex md:flex-col w-60 shrink-0 border-r border-border/60 bg-background/40 backdrop-blur-xl h-screen sticky top-0">
+      <SidebarContents />
+    </aside>
   )
 }
