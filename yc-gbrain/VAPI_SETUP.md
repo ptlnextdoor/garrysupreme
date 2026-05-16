@@ -23,6 +23,8 @@ ngrok http 3001
 
 Use the `https://...ngrok-free.app` URL for all Vapi server URLs. If `PULSE_DEMO_TOKEN` is set, append `?token=YOUR_TOKEN` to every Vapi server URL and open the dashboard once as `http://localhost:3000?token=YOUR_TOKEN`.
 
+Set `DEMO_PHONE_MATCH` to the last 4-7 digits of the phone number you will call from so the planted live demo loads Aayushya's customer brain.
+
 ## 3. Create the Vapi assistant
 
 1. Create a new assistant in Vapi.
