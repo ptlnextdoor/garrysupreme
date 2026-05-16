@@ -22,7 +22,7 @@ export default function CustomersPage() {
   return (
     <>
       <DashboardTopbar title="Customers" subtitle="Every caller, every preference, perfectly remembered." />
-      <div className="p-6 lg:p-10 max-w-6xl">
+      <div className="p-6 lg:p-10 mx-auto max-w-7xl w-full">
         <Card>
           <CardContent className="p-0">
             <Table>

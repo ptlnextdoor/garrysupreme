@@ -45,7 +45,7 @@ export default function DashboardOverviewPage() {
         title="Overview"
         subtitle="Today at Sarah's Bakery — Saturday, May 16, 2026"
       />
-      <div className="p-6 lg:p-10 space-y-8 max-w-6xl">
+      <div className="p-6 lg:p-10 space-y-8 mx-auto max-w-7xl w-full">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-2">
