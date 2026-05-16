@@ -111,10 +111,12 @@ async function persistOrder(body: unknown, customers: CustomerBrain): Promise<vo
     timestamp: placedAt,
   })
 
-  for (const pref of args.new_preferences ?? []) {
+  const prefs = args.new_preferences ?? []
+  for (let i = 0; i < prefs.length; i++) {
+    const pref = prefs[i]
     const ts = placedAt.replace(/[:.]/g, '-')
     const fact: MemoryFact = {
-      id: `${callId}-${ts}`,
+      id: `${callId}-${ts}-${i}`,
       phone: normalized,
       callId,
       fact: pref.fact,

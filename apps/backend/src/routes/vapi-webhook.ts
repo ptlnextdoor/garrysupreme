@@ -3,6 +3,7 @@ import { GBrainClient, CompanyBrain, CustomerBrain, normalizePhone } from '@puls
 import { parseSession, rankMenu } from '@pulse/scorer'
 import { hub } from '../services/sse-hub.js'
 import type { CustomerProfile, MenuItem, MemoryFact } from '@pulse/types'
+import { activeCalls } from './queries.js'
 import { z } from 'zod'
 
 const COMPANY_SLUG = 'sunrise-coffee'
@@ -128,6 +129,26 @@ const vapiWebhookRoute: FastifyPluginAsync = async (app: FastifyInstance) => {
     const customer = (call?.customer ?? {}) as Record<string, unknown>
     const phone = (customer?.number as string) ?? 'unknown'
     const callId = (call?.id as string) ?? 'unknown-call'
+
+    // Handle call lifecycle events (status-update, end-of-call-report)
+    const msgType = (message?.type as string) ?? ''
+    log(`webhook msgType=${msgType}, toolCalls=${toolCallList.length}`)
+
+    if (msgType === 'status-update' || msgType === 'call-start') {
+      if (callId !== 'unknown-call' && !activeCalls.has(callId)) {
+        const profile = phone !== 'unknown' ? await customerBrain.getProfile(phone) : null
+        const customerName = profile?.name ?? 'Caller'
+        activeCalls.set(callId, { callId, phone, customerName, startedAt: Date.now() })
+        hub.broadcast({ type: 'call_started', callId, phone, customerName } as any)
+      }
+      return reply.send({ ok: true })
+    }
+
+    if (msgType === 'end-of-call-report' || msgType === 'call-end') {
+      activeCalls.delete(callId)
+      hub.broadcast({ type: 'call_ended', callId } as any)
+      return reply.send({ ok: true })
+    }
 
     if (toolCallList.length === 0) {
       log('no toolCallList in webhook payload')
