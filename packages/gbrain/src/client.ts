@@ -157,15 +157,26 @@ export class GBrainClient {
   private async fileWrite(itemPath: string, content: string): Promise<void> {
     const full = this.resolvePath(itemPath)
     await fs.mkdir(path.dirname(full), { recursive: true })
-    await fs.writeFile(full, content, 'utf8')
+    // Atomic write: write to temp file, then rename (rename is atomic on POSIX same-fs)
+    const tmp = `${full}.tmp-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    try {
+      await fs.writeFile(tmp, content, 'utf8')
+      await fs.rename(tmp, full)
+    } catch (err) {
+      try { await fs.unlink(tmp) } catch { /* best-effort cleanup */ }
+      throw err
+    }
   }
 
   private async fileAppend(itemPath: string, content: string): Promise<void> {
     const full = this.resolvePath(itemPath)
     await fs.mkdir(path.dirname(full), { recursive: true })
     const existing = await this.fileRead(itemPath)
-    if (existing === null) await fs.writeFile(full, content, 'utf8')
-    else await fs.writeFile(full, existing.endsWith('\n') ? existing + content : existing + '\n' + content, 'utf8')
+    const merged = existing === null
+      ? content
+      : (existing.endsWith('\n') ? existing + content : existing + '\n' + content)
+    // Use atomic write via fileWrite for safety under concurrency
+    await this.fileWrite(itemPath, merged)
   }
 
   private async fileList(prefix: string): Promise<string[]> {
