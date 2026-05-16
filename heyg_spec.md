@@ -271,9 +271,9 @@ Even at HALF these numbers (50% of recovered calls convert, zero upsell effect),
 | **Google CCAI / Amazon Lex** | Enterprise contact center AI | Built for Fortune 500. Requires dedicated engineering team. $50K+ implementation. Overkill for SMBs. |
 | **Human answering service** | Real people answer your phone | $1-3/minute. Can't personalize at scale. Can't handle 10 simultaneous calls. No customer intelligence. $500-2,000/month for basic coverage. |
 
-### Pulse's Unfair Advantage: **Persistent Memory via GBrain**
+### Pulse's Unfair Advantage: **Auditable, Markdown-First Memory via GBrain**
 
-Every competitor treats each call as a blank slate. Pulse doesn't.
+Some competitors store basic call notes. Pulse is structurally different.
 
 The 10th call is dramatically better than the 1st call. By the 50th call, Pulse knows:
 - Your name, your usual order, your dietary restrictions
@@ -282,7 +282,14 @@ The 10th call is dramatically better than the 1st call. By the 50th call, Pulse 
 - That you tried the lavender latte and didn't like it (won't recommend it again)
 - That your daughter has a nut allergy
 
-**This memory compounds.** The longer a business uses Pulse, the more valuable it becomes. Switching costs increase every day. No competitor has this because no competitor is built on a persistent knowledge graph architecture.
+**What makes Pulse's memory different:**
+
+- **Markdown-first** — business owners can read and edit their company brain in plain text. No black box, no vendor lock-in.
+- **Evidence-backed** — every memory fact includes the exact quote that generated it and a confidence score. Owners approve or reject before facts are trusted.
+- **Human-auditable** — the GBrain knowledge layer is inspectable by non-engineers. A business owner can open a file and see exactly what Pulse knows about a customer.
+- **Self-wiring** — customer preferences automatically link to menu items, building a recommendation network that improves without manual curation.
+
+This isn't just "stores call history." It's a structured, auditable knowledge graph that compounds over time and that the business actually owns and controls. No competitor is built on this architecture.
 
 ---
 
@@ -402,7 +409,8 @@ Imagine: you're a Pulse customer at Sunrise Coffee. You walk into Sarah's Bakery
 ### Cons / Risks
 - ⚠️ **Vapi/voice provider dependency** — Pulse relies on Vapi (or similar) for the voice layer. Mitigated by: Vapi is one of several providers; we can switch to Bland.ai, Retell, or build our own voice stack as we scale.
 - ⚠️ **SMB churn is notoriously high** — SMBs close, change priorities, cancel subscriptions. Mitigated by: if the ROI is 15-31×, churn should be well below industry average. Product becomes stickier over time as customer profiles accumulate.
-- ⚠️ **Privacy perception** — Customers may initially be uncomfortable knowing the AI "remembers" them. Mitigated by: Opt-in only. Customers call us, we don't cold-call them. Data stored locally. Transparent about what's remembered.
+- ⚠️ **Privacy perception** — Customers may initially be uncomfortable knowing the AI "remembers" them. Mitigated by: Opt-in only. Customers call us, we don't cold-call them. Memory facts require business owner approval before they're trusted. Customers can ask what Pulse remembers and receive a plain-English summary.
+- ⚠️ **Phase 2 cross-business data sharing contradicts single-business local storage** — The "customer profiles follow the customer" vision (Section 7) is a fundamentally different data model from per-business local storage. Cross-business sharing requires explicit customer opt-in, separate data agreements with each participating business, and a distinct privacy policy. Do not describe it as an extension of the single-business model — it is a separate product decision with separate legal and trust implications.
 - ⚠️ **Voice AI quality can vary** — Accents, background noise, complex requests can trip up voice AI. Mitigated by: graceful fallback to human ("Let me connect you with Sarah directly"), and voice quality is improving rapidly.
 - ⚠️ **Big players could build this** — Google, Amazon, or Salesforce could launch a competing product. Mitigated by: Big companies won't serve SMBs (too fragmented, too low ACV). Our persistent memory + community network effect creates a defensible position. Also, speed — we ship faster than any enterprise.
 - ⚠️ **Building the initial company brain requires effort** — Business owners need to input their menu/products. Mitigated by: We do this during onboarding (white-glove for first 100 customers). Eventually, automated ingestion from POS systems and websites.
