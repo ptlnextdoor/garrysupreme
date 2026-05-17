@@ -110,6 +110,31 @@ const intelRoute: FastifyPluginAsync = async (app: FastifyInstance) => {
     }
   })
 
+  app.options('/api/intel/deep-dive', async (_req, reply) => {
+    reply.header('Access-Control-Allow-Origin', '*')
+    return reply.code(204).send()
+  })
+
+  app.get('/api/intel/deep-dive', async (req, reply) => {
+    reply.header('Access-Control-Allow-Origin', '*')
+    const slug = (req.query as { slug?: string })?.slug ?? 'intel/sams-club-deep-dive'
+    const content = await gbrain.readItem(slug)
+    if (!content) return reply.code(404).send({ error: 'deep dive not found', slug })
+    const fm = parseFrontmatter(content)
+    return {
+      source: fm.source ?? 'The Hog Agent',
+      report_type: fm.report_type ?? 'competitor_deep_dive',
+      target: fm.target ?? null,
+      generated_at: fm.generated_at ?? null,
+      actions_used: Number(fm.actions_used ?? 0),
+      chat_id: fm.chat_id ?? null,
+      project_id: fm.project_id ?? null,
+      slug,
+      content: stripFrontmatter(content),
+      length: content.length,
+    }
+  })
+
   app.options('/api/intel/insight', async (_req, reply) => {
     reply.header('Access-Control-Allow-Origin', '*')
     return reply.code(204).send()

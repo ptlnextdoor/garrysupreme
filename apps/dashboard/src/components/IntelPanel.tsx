@@ -19,16 +19,35 @@ type InsightHit = {
   all_triggers: number
 }
 
+type DeepDive = {
+  source: string
+  report_type: string
+  target: string | null
+  generated_at: string | null
+  actions_used: number
+  chat_id: string | null
+  slug: string
+  content: string
+  length: number
+  error?: string
+}
+
 export default function IntelPanel() {
   const [intel, setIntel] = useState<Intel | null>(null)
   const [request, setRequest] = useState('')
   const [hit, setHit] = useState<InsightHit | null>(null)
   const [loading, setLoading] = useState(false)
+  const [deepDive, setDeepDive] = useState<DeepDive | null>(null)
+  const [showFullReport, setShowFullReport] = useState(false)
 
   useEffect(() => {
     fetch(`${BACKEND}/api/intel`)
       .then((r) => r.json())
       .then(setIntel)
+      .catch(() => {})
+    fetch(`${BACKEND}/api/intel/deep-dive`)
+      .then((r) => r.json())
+      .then((d) => { if (!d.error) setDeepDive(d) })
       .catch(() => {})
   }, [])
 
@@ -156,6 +175,41 @@ export default function IntelPanel() {
           </div>
         )}
       </div>
+
+      {deepDive && (
+        <div className="flex flex-col gap-2 border-t border-[#2A2A2A] pt-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-gray-500 uppercase tracking-wider">
+              🔬 Deep Research
+            </span>
+            <span className="text-[9px] font-mono uppercase border rounded px-1.5 py-0.5 text-purple-300 bg-purple-400/10 border-purple-400/30">
+              Hog Agent · {deepDive.actions_used} actions
+            </span>
+          </div>
+          <div className="bg-[#0F0F0F] border border-purple-400/20 rounded-lg p-3">
+            <div className="text-[11px] text-white font-semibold mb-1">
+              {deepDive.report_type === 'competitor_deep_dive' ? 'Competitor Deep Dive: ' : ''}
+              {deepDive.target ?? 'Report'}
+            </div>
+            <div className="text-[10px] text-gray-500 font-mono mb-2">
+              {deepDive.generated_at && new Date(deepDive.generated_at).toLocaleString()}
+              {' · '}
+              {(deepDive.length / 1024).toFixed(1)} KB · SpyFu SEO + PPC + LinkedIn + news
+            </div>
+            <button
+              onClick={() => setShowFullReport(!showFullReport)}
+              className="text-[10px] text-purple-300 hover:text-purple-200 underline"
+            >
+              {showFullReport ? '— Hide full report' : '+ Show full report'}
+            </button>
+            {showFullReport && (
+              <pre className="text-[10px] text-gray-300 mt-2 max-h-80 overflow-auto font-mono whitespace-pre-wrap">
+                {deepDive.content}
+              </pre>
+            )}
+          </div>
+        </div>
+      )}
 
       {intel?.source && (
         <div className="text-[10px] text-gray-600 font-mono border-t border-[#2A2A2A] pt-2">
