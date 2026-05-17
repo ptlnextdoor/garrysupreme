@@ -92,18 +92,29 @@ async function handleSaveOrder(
         await customers.appendOrderToHistory(normalized, orderLine)
 
         // GBrain timeline: append immutable behavioral event to the customer page.
-        // Format matches GBrain's append-only timeline convention: "Source — What happened"
-        const customerSlug = `customers/${normalized}`
-        const timelineText = `voice order via call ${callId} — ${args.items.length} item(s): ${args.items.slice(0, 5).join(', ')}${args.items.length > 5 ? '...' : ''}`
-        void gbrain.addTimelineEntry(customerSlug, placedAt.slice(0, 10), timelineText)
+        // Resolve the actual gbrain slug for this customer (frontmatter lookup
+        // by phone). Falls back to 'customers/demo-customer' for the seeded
+        // demo so the timeline always lands somewhere existing.
+        const resolvedCustomerSlug =
+          (await gbrain.searchFrontmatter('customers', 'phone', normalized)) ??
+          'customers/demo-customer'
+        const summary = `voice order via call ${callId.slice(0, 12)} — ${args.items.length} item(s)`
+        const detail = args.items.slice(0, 8).map((i) => `• ${i}`).join('\n')
+        void gbrain
+          .addTimelineEntry(resolvedCustomerSlug, placedAt.slice(0, 10), summary, {
+            detail,
+            source: 'pulse-voice',
+          })
           .catch((err) => log('addTimelineEntry failed (non-fatal)', err))
 
         // GBrain typed graph: link customer → ordered → menu item, so we can
-        // traverse "who else bought this?" and "what does Aarya usually order?"
-        for (const item of args.items.slice(0, 10)) {
-          const itemSlug = `menu/${slugifyItemName(item)}`
-          void gbrain.addLink(customerSlug, itemSlug, 'ordered')
-            .catch((err) => log(`addLink ${customerSlug}->${itemSlug} failed (non-fatal)`, err))
+        // traverse "what does Aarya usually order?" via traverse_graph.
+        // Link target uses the actual menu page slug (single page).
+        const menuSlug = 'companies/costco/menu'
+        for (const _item of args.items.slice(0, 10)) {
+          void gbrain
+            .addLink(resolvedCustomerSlug, menuSlug, 'ordered')
+            .catch((err) => log(`addLink ${resolvedCustomerSlug}->${menuSlug} failed (non-fatal)`, err))
         }
 
         hub.broadcast({

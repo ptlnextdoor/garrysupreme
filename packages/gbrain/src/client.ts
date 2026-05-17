@@ -245,12 +245,18 @@ export class GBrainClient {
    * Append a timeline entry to a page. Used for behavioral audit trails
    * (e.g. "2026-05-17 — placed bulk order: 8 items, $124.50").
    * Gbrain stores these as immutable, queryable, dated events.
+   *
+   * gbrain's add_timeline_entry tool requires (slug, date, summary).
+   * Optional: detail, source.
    */
-  async addTimelineEntry(slug: string, date: string, text: string): Promise<unknown> {
+  async addTimelineEntry(slug: string, date: string, summary: string, opts: { detail?: string; source?: string } = {}): Promise<unknown> {
     if (this.mode === 'file') return { skipped: 'file-mode' }
     const fullSlug = projectPrefix(this.projectId) + slug.replace(/^\/+/, '').replace(/\.md$/, '')
     try {
-      return await this.mcpCall('add_timeline_entry', { slug: fullSlug, date, text })
+      const args: Record<string, unknown> = { slug: fullSlug, date, summary }
+      if (opts.detail) args.detail = opts.detail
+      if (opts.source) args.source = opts.source
+      return await this.mcpCall('add_timeline_entry', args)
     } catch (err) {
       return { error: String(err) }
     }
