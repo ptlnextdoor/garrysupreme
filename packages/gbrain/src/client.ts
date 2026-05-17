@@ -211,7 +211,8 @@ export class GBrainClient {
   /** Run a hybrid RAG query against the real brain (gbrain query tool). */
   async query(question: string, opts: { noExpand?: boolean } = {}): Promise<unknown> {
     if (this.mode === 'file') return { skipped: 'file-mode', results: [] }
-    return await this.mcpCall('query', { question, no_expand: opts.noExpand ?? false })
+    // gbrain query tool's param is named `query` (the text), not `question`
+    return await this.mcpCall('query', { query: question, no_expand: opts.noExpand ?? false })
   }
 
   /** Keyword search via gbrain search tool. */
