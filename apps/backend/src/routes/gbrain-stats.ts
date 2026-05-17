@@ -44,6 +44,36 @@ const gbrainStatsRoute: FastifyPluginAsync = async (app: FastifyInstance) => {
       : await client.search(q).catch((err) => ({ error: String(err) }))
     return { mode: client.mode, query: q, hybrid: !!body.hybrid, result }
   })
+
+  app.options('/api/gbrain/timeline', async (_req, reply) => {
+    reply.header('Access-Control-Allow-Origin', '*')
+    return reply.code(204).send()
+  })
+
+  app.get('/api/gbrain/timeline', async (req, reply) => {
+    reply.header('Access-Control-Allow-Origin', '*')
+    const slug = (req.query as { slug?: string })?.slug
+    const limit = Number((req.query as { limit?: string })?.limit ?? 50)
+    const result = await client.getTimeline(slug, limit).catch((err) => ({ error: String(err) }))
+    return { mode: client.mode, slug: slug ?? null, result }
+  })
+
+  app.options('/api/gbrain/graph', async (_req, reply) => {
+    reply.header('Access-Control-Allow-Origin', '*')
+    return reply.code(204).send()
+  })
+
+  app.get('/api/gbrain/graph', async (req, reply) => {
+    reply.header('Access-Control-Allow-Origin', '*')
+    const q = req.query as { slug?: string; depth?: string; linkType?: string; direction?: 'in' | 'out' | 'both' }
+    if (!q.slug) return reply.code(400).send({ error: 'slug required' })
+    const result = await client.traverseGraph(q.slug, {
+      depth: q.depth ? Number(q.depth) : 1,
+      linkType: q.linkType,
+      direction: q.direction ?? 'both',
+    }).catch((err) => ({ error: String(err) }))
+    return { mode: client.mode, slug: q.slug, result }
+  })
 }
 
 export default gbrainStatsRoute
