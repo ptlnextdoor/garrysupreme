@@ -7,6 +7,7 @@ import OrderFeed from '../components/OrderFeed'
 import CustomerPanel from '../components/CustomerPanel'
 import MemoryReview from '../components/MemoryReview'
 import InsightCards from '../components/InsightCards'
+import GBrainPanel from '../components/GBrainPanel'
 
 export default function Dashboard() {
   const { activeCalls, recentOrders, pendingFacts, stats } = useSSE()
@@ -42,8 +43,9 @@ export default function Dashboard() {
         {/* Center col: Order Feed */}
         <OrderFeed orders={recentOrders} />
 
-        {/* Right col: Memory Review + Insight Cards */}
+        {/* Right col: GBrain status + Memory Review + Insight Cards */}
         <div className="flex flex-col gap-4">
+          <GBrainPanel />
           <MemoryReview facts={pendingFacts} />
           <InsightCards stats={stats} />
         </div>

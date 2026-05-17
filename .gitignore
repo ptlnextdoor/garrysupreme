@@ -46,3 +46,4 @@ yc-gbrain/gbrain/state.json
 yc-gbrain/gbrain/orders/*.md
 yc-gbrain/dashboard/dist/
 yc-gbrain/server/dist/
+.env.gbrain

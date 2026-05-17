@@ -2,28 +2,44 @@ import { promises as fs } from 'node:fs'
 import * as path from 'node:path'
 
 /**
- * GBrain client — supports three modes:
- *   - 'file'   : pure local markdown filesystem (no network) — default, used for offline/demo
- *   - 'api'    : remote GBrain MCP server over HTTP (JSON-RPC tools/call envelope)
- *   - 'hybrid' : api primary, file as both cache + fallback (resilient demo mode)
+ * GBrain client — speaks the real GBrain MCP-over-HTTP protocol.
  *
- * GBrain is an MCP-native knowledge graph (https://github.com/garrytan/gbrain).
- * The protocol exposes tools — gbrain.upsert / gbrain.get / gbrain.list / gbrain.search —
- * over HTTP at /mcp via JSON-RPC 2.0. This client speaks that protocol directly.
+ * Real reference: https://github.com/garrytan/gbrain (v0.35+, ~16k stars)
  *
- * To run a local GBrain server:
- *   $ npm i -g @garrytan/gbrain
- *   $ gbrain init
- *   $ gbrain serve --http   # prints a bearer token + URL
- *   $ export GBRAIN_BASE_URL=http://localhost:3131
- *   $ export GBRAIN_API_KEY=<token>
- *   $ export GBRAIN_MODE=hybrid   # optional; otherwise auto-detects 'api'
+ * Modes:
+ *   - 'file'   : local markdown filesystem (no network) — default / offline
+ *   - 'api'    : remote GBrain MCP server only (fails closed if unreachable)
+ *   - 'hybrid' : api primary, file as cache + fallback (recommended for demo)
+ *
+ * The real GBrain HTTP MCP server (`gbrain serve --http`) speaks:
+ *   - OAuth 2.1 client_credentials at POST /token
+ *   - MCP JSON-RPC 2.0 at POST /mcp with Authorization: Bearer
+ *   - Streamable HTTP transport: responses come back as SSE
+ *     (event: message\ndata: {...json...}\n)
+ *
+ * Real MCP tool names (50+ tools — we use these eight):
+ *   get_page(slug, fuzzy?, include_deleted?)  → page content
+ *   put_page(slug, content)                   → write/update page
+ *   delete_page(slug)                         → soft-delete
+ *   list_pages(type?, tag?, limit?)           → list pages
+ *   search(query)                             → keyword search (tsvector)
+ *   query(question, no_expand?)               → hybrid RAG search
+ *   get_stats()                               → brain statistics
+ *   get_brain_identity()                      → version, page count, name
+ *
+ * Auth flow (auto-handled):
+ *   1. If GBRAIN_CLIENT_ID + GBRAIN_CLIENT_SECRET set, exchange for token
+ *      at /token (client_credentials grant), cache for token_ttl - 60s
+ *   2. If GBRAIN_API_KEY set, use it directly as the bearer token
+ *   3. Refresh on 401 once before failing
  */
 
 export type GBrainMode = 'api' | 'file' | 'hybrid'
 
 export type GBrainConfig = {
   apiKey?: string
+  clientId?: string
+  clientSecret?: string
   baseUrl?: string
   projectId?: string
   dataRoot?: string
@@ -40,33 +56,52 @@ const log = (msg: string, data?: unknown): void => {
   else console.error(`[gbrain] ${msg}`)
 }
 
+// Call counter for demo visibility — read via getCallStats()
+const callCounts: Record<string, number> = {}
+
+export function getCallStats(): { byTool: Record<string, number>; total: number } {
+  const total = Object.values(callCounts).reduce((s, n) => s + n, 0)
+  return { byTool: { ...callCounts }, total }
+}
+
+export function resetCallStats(): void {
+  for (const k of Object.keys(callCounts)) delete callCounts[k]
+}
+
 export class GBrainClient {
   readonly mode: GBrainMode
-  private readonly apiKey?: string
+  private readonly clientId?: string
+  private readonly clientSecret?: string
+  private readonly staticApiKey?: string
   private readonly baseUrl?: string
   private readonly projectId?: string
   private readonly dataRoot: string
   private rpcId = 0
+  private cachedToken: { value: string; expiresAt: number } | null = null
 
   constructor(cfg: GBrainConfig = {}) {
     const apiKey = cfg.apiKey ?? process.env.GBRAIN_API_KEY
+    const clientId = cfg.clientId ?? process.env.GBRAIN_CLIENT_ID
+    const clientSecret = cfg.clientSecret ?? process.env.GBRAIN_CLIENT_SECRET
     const baseUrl = cfg.baseUrl ?? process.env.GBRAIN_BASE_URL
     const projectId = cfg.projectId ?? process.env.GBRAIN_PROJECT_ID ?? 'default'
     const envMode = (process.env.GBRAIN_MODE ?? '').toLowerCase() as GBrainMode | ''
     this.dataRoot = cfg.dataRoot ?? process.env.GBRAIN_DATA_ROOT ?? path.resolve(process.cwd(), 'data')
 
-    const hasApi = !!(apiKey && baseUrl)
-    const requestedMode = cfg.mode ?? (envMode || (hasApi ? 'api' : 'file'))
+    const hasAuth = !!(baseUrl && (apiKey || (clientId && clientSecret)))
+    const requestedMode = cfg.mode ?? (envMode || (hasAuth ? 'hybrid' : 'file'))
 
     if (requestedMode === 'api' || requestedMode === 'hybrid') {
-      if (!hasApi) {
-        log(`mode=${requestedMode} requested but GBRAIN_API_KEY/GBRAIN_BASE_URL missing — falling back to 'file'`)
+      if (!hasAuth) {
+        log(`mode=${requestedMode} requested but GBRAIN_BASE_URL+(GBRAIN_API_KEY or GBRAIN_CLIENT_ID/SECRET) missing — falling back to 'file'`)
         this.mode = 'file'
       } else {
         this.mode = requestedMode
-        this.apiKey = apiKey
         this.baseUrl = baseUrl!.replace(/\/$/, '')
         this.projectId = projectId
+        this.staticApiKey = apiKey || undefined
+        this.clientId = clientId || undefined
+        this.clientSecret = clientSecret || undefined
       }
     } else {
       this.mode = 'file'
@@ -74,18 +109,17 @@ export class GBrainClient {
     log(`mode=${this.mode}${this.baseUrl ? ` baseUrl=${this.baseUrl}` : ''}${this.projectId ? ` project=${this.projectId}` : ''}`)
   }
 
+  // ===== Public API (called by CompanyBrain, CustomerBrain) =====
+
   async readItem(itemPath: string): Promise<string | null> {
     try {
       if (this.mode === 'file') return await this.fileRead(itemPath)
-      // api or hybrid → try api first
       try {
         const apiResult = await this.apiGet(itemPath)
         if (apiResult !== null) {
-          // hybrid: refresh the local cache so file fallback stays warm
           if (this.mode === 'hybrid') this.fileWrite(itemPath, apiResult).catch(() => {})
           return apiResult
         }
-        // api returned null (not found) — in hybrid, try file
         if (this.mode === 'hybrid') return await this.fileRead(itemPath)
         return null
       } catch (err) {
@@ -118,7 +152,6 @@ export class GBrainClient {
           if (this.mode === 'api') return false
         }
       }
-      // hybrid succeeds if either side worked
       return this.mode === 'hybrid' ? (apiOk || fileOk) : true
     } catch (err) {
       log(`writeItem failed: ${itemPath}`, err)
@@ -143,7 +176,14 @@ export class GBrainClient {
     try {
       if (this.mode === 'file') return await this.fileList(prefix)
       try {
-        return await this.apiList(prefix)
+        const remote = await this.apiList(prefix)
+        // hybrid: union with file so we don't miss locally-only items
+        if (this.mode === 'hybrid') {
+          const local = await this.fileList(prefix)
+          const set = new Set([...remote, ...local])
+          return Array.from(set)
+        }
+        return remote
       } catch (err) {
         if (this.mode === 'hybrid') {
           log(`api list failed, falling back to file: ${prefix}`, err)
@@ -158,15 +198,6 @@ export class GBrainClient {
   }
 
   async searchFrontmatter(prefix: string, key: string, value: string): Promise<string | null> {
-    // Prefer native gbrain.search when available; falls back to scan via list+read
-    if (this.mode !== 'file') {
-      try {
-        const hit = await this.apiSearch(prefix, { [key]: value })
-        if (hit) return hit
-      } catch (err) {
-        log(`apiSearch failed, falling back to scan: ${prefix}`, err)
-      }
-    }
     const items = await this.listItems(prefix)
     for (const itemPath of items) {
       const content = await this.readItem(itemPath)
@@ -177,72 +208,153 @@ export class GBrainClient {
     return null
   }
 
-  // ===== GBrain MCP-over-HTTP (JSON-RPC 2.0) =====
-  // Tool names map to the documented GBrain MCP tools.
-  // Endpoint: POST {baseUrl}/mcp  with Authorization: Bearer {apiKey}
+  /** Run a hybrid RAG query against the real brain (gbrain query tool). */
+  async query(question: string, opts: { noExpand?: boolean } = {}): Promise<unknown> {
+    if (this.mode === 'file') return { skipped: 'file-mode', results: [] }
+    return await this.mcpCall('query', { question, no_expand: opts.noExpand ?? false })
+  }
 
-  private async mcpCall<T>(toolName: string, args: Record<string, unknown>): Promise<T> {
-    if (!this.baseUrl) throw new Error('gbrain: baseUrl not configured')
-    const id = ++this.rpcId
-    const res = await fetch(`${this.baseUrl}/mcp`, {
-      method: 'POST',
-      headers: { ...this.authHeaders(), 'content-type': 'application/json', accept: 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        method: 'tools/call',
-        params: { name: toolName, arguments: { project: this.projectId, ...args } },
-        id,
-      }),
-    })
-    if (!res.ok) throw new Error(`gbrain ${toolName} HTTP ${res.status}: ${await res.text()}`)
-    const body = (await res.json()) as { result?: { content?: Array<{ type: string; text?: string }> }; error?: { code: number; message: string } }
-    if (body.error) throw new Error(`gbrain ${toolName} JSON-RPC ${body.error.code}: ${body.error.message}`)
-    // MCP convention: result.content is an array of { type:'text', text:'...JSON...' }
-    const textPart = body.result?.content?.find((c) => c.type === 'text')?.text
-    if (textPart === undefined) return body.result as unknown as T
+  /** Keyword search via gbrain search tool. */
+  async search(q: string): Promise<unknown> {
+    if (this.mode === 'file') return { skipped: 'file-mode', results: [] }
+    return await this.mcpCall('search', { query: q })
+  }
+
+  /** Get brain identity (version, page count, name). */
+  async getBrainIdentity(): Promise<unknown> {
+    if (this.mode === 'file') return { mode: 'file', root: this.dataRoot }
     try {
-      return JSON.parse(textPart) as T
-    } catch {
-      return textPart as unknown as T
+      return await this.mcpCall('get_brain_identity', {})
+    } catch (err) {
+      return { error: String(err) }
     }
   }
 
-  private async apiGet(itemPath: string): Promise<string | null> {
+  /** Get brain stats (page counts, chunks, sources). */
+  async getStats(): Promise<unknown> {
+    if (this.mode === 'file') return { mode: 'file' }
     try {
-      const out = await this.mcpCall<{ content?: string; found?: boolean } | string>('gbrain.get', { path: itemPath })
-      if (typeof out === 'string') return out
-      if (out && typeof out === 'object') {
-        if (out.found === false) return null
-        return out.content ?? null
-      }
-      return null
+      return await this.mcpCall('get_stats', {})
     } catch (err) {
-      if (/404|not.found/i.test(String(err))) return null
+      return { error: String(err) }
+    }
+  }
+
+  // ===== MCP protocol over Streamable HTTP =====
+  // POST {baseUrl}/mcp with bearer auth; responses arrive as
+  // SSE: "event: message\ndata: {jsonrpc:...}\n\n"
+
+  private async getToken(): Promise<string> {
+    if (this.staticApiKey) return this.staticApiKey
+    if (this.cachedToken && this.cachedToken.expiresAt > Date.now() + 60_000) {
+      return this.cachedToken.value
+    }
+    if (!this.clientId || !this.clientSecret || !this.baseUrl) {
+      throw new Error('gbrain: no auth credentials configured')
+    }
+    const params = new URLSearchParams({
+      grant_type: 'client_credentials',
+      client_id: this.clientId,
+      client_secret: this.clientSecret,
+      scope: 'read write admin',
+    })
+    const res = await fetch(`${this.baseUrl}/token`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+    })
+    if (!res.ok) throw new Error(`gbrain token exchange failed: ${res.status} ${await res.text()}`)
+    const body = (await res.json()) as { access_token: string; expires_in: number }
+    this.cachedToken = {
+      value: body.access_token,
+      expiresAt: Date.now() + (body.expires_in ?? 3600) * 1000,
+    }
+    return body.access_token
+  }
+
+  private async mcpCall<T = unknown>(toolName: string, args: Record<string, unknown>): Promise<T> {
+    if (!this.baseUrl) throw new Error('gbrain: baseUrl not configured')
+    const id = ++this.rpcId
+    callCounts[toolName] = (callCounts[toolName] ?? 0) + 1
+    const doFetch = async (token: string) => fetch(`${this.baseUrl}/mcp`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${token}`,
+        'content-type': 'application/json',
+        accept: 'application/json, text/event-stream',
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'tools/call',
+        params: { name: toolName, arguments: args },
+        id,
+      }),
+    })
+
+    let token = await this.getToken()
+    let res = await doFetch(token)
+    if (res.status === 401 && this.clientId) {
+      // Token expired — clear cache and try once more
+      this.cachedToken = null
+      token = await this.getToken()
+      res = await doFetch(token)
+    }
+    if (!res.ok) throw new Error(`gbrain ${toolName} HTTP ${res.status}: ${await res.text()}`)
+
+    // Parse response — either plain JSON or SSE-framed
+    const text = await res.text()
+    const json = parseMcpResponse(text)
+    if (json?.error) throw new Error(`gbrain ${toolName} JSON-RPC ${json.error.code}: ${json.error.message}`)
+    const content = json?.result?.content
+    if (Array.isArray(content)) {
+      const textPart = content.find((c: { type: string; text?: string }) => c.type === 'text')?.text
+      if (typeof textPart === 'string') {
+        try { return JSON.parse(textPart) as T } catch { return textPart as unknown as T }
+      }
+    }
+    return json?.result as T
+  }
+
+  private async apiGet(itemPath: string): Promise<string | null> {
+    const slug = pathToSlug(itemPath, this.projectId)
+    try {
+      const out = await this.mcpCall<{ slug?: string; content?: string; status?: string }>('get_page', { slug })
+      if (!out) return null
+      // gbrain returns frontmatter+body; reconstruct full markdown
+      if (typeof out === 'string') return out
+      // Some returns inline content directly; others nest under content/markdown fields
+      const content = (out as { content?: string; markdown?: string }).content
+        ?? (out as { markdown?: string }).markdown
+      return content ?? null
+    } catch (err) {
+      const msg = String(err)
+      if (/not.found|404|page.not.exist/i.test(msg)) return null
       throw err
     }
   }
 
   private async apiUpsert(itemPath: string, content: string): Promise<void> {
-    await this.mcpCall<unknown>('gbrain.upsert', { path: itemPath, content })
+    const slug = pathToSlug(itemPath, this.projectId)
+    await this.mcpCall<unknown>('put_page', { slug, content })
   }
 
   private async apiList(prefix: string): Promise<string[]> {
-    const out = await this.mcpCall<{ paths?: string[] } | string[]>('gbrain.list', { prefix })
-    if (Array.isArray(out)) return out
-    return out?.paths ?? []
+    // list_pages doesn't take a slug prefix directly; use search/query instead
+    // For our use case, prefix is "customers", "customers/memory-facts", "companies/costco"
+    // We use the slug prefix to filter what list_pages returns
+    const out = await this.mcpCall<{ pages?: Array<{ slug: string }>; results?: Array<{ slug: string }> } | Array<{ slug: string }>>(
+      'list_pages',
+      { limit: 5000 },
+    )
+    const arr = Array.isArray(out) ? out : (out?.pages ?? out?.results ?? [])
+    const ourPrefix = projectPrefix(this.projectId) + prefix.replace(/\/$/, '')
+    return arr
+      .map((p) => p.slug)
+      .filter((s) => s.startsWith(ourPrefix))
+      .map((s) => slugToPath(s, this.projectId))
   }
 
-  private async apiSearch(prefix: string, filters: Record<string, string>): Promise<string | null> {
-    const out = await this.mcpCall<{ paths?: string[] } | string[]>('gbrain.search', { prefix, frontmatter: filters, limit: 1 })
-    const paths = Array.isArray(out) ? out : (out?.paths ?? [])
-    return paths[0] ?? null
-  }
-
-  private authHeaders(): Record<string, string> {
-    return { authorization: `Bearer ${this.apiKey}` }
-  }
-
-  // ===== File-mode operations (local markdown filesystem) =====
+  // ===== File-mode operations (atomic writes for safety under concurrency) =====
 
   private resolvePath(itemPath: string): string {
     const clean = itemPath.replace(/^\/+/, '')
@@ -264,7 +376,6 @@ export class GBrainClient {
   private async fileWrite(itemPath: string, content: string): Promise<void> {
     const full = this.resolvePath(itemPath)
     await fs.mkdir(path.dirname(full), { recursive: true })
-    // Atomic write: write to temp file, then rename (rename is atomic on POSIX same-fs)
     const tmp = `${full}.tmp-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     try {
       await fs.writeFile(tmp, content, 'utf8')
@@ -298,6 +409,52 @@ export class GBrainClient {
     await walk(base)
     return out
   }
+}
+
+/** Map our internal path (companies/costco/menu) to a gbrain slug under the project namespace. */
+function pathToSlug(itemPath: string, projectId?: string): string {
+  const clean = itemPath.replace(/^\/+/, '').replace(/\.md$/, '')
+  return `${projectPrefix(projectId)}${clean}`
+}
+
+function slugToPath(slug: string, projectId?: string): string {
+  const prefix = projectPrefix(projectId)
+  if (slug.startsWith(prefix)) return slug.slice(prefix.length)
+  return slug
+}
+
+function projectPrefix(projectId?: string): string {
+  if (!projectId || projectId === 'default') return ''
+  return `${projectId}/`
+}
+
+/**
+ * Parse an MCP response body which may be:
+ *   - Plain JSON: `{"jsonrpc":"2.0","result":...,"id":1}`
+ *   - SSE-framed: `event: message\ndata: {...json...}\n\n`
+ *
+ * Streamable HTTP transport (StreamableHTTPServerTransport) always returns SSE.
+ */
+function parseMcpResponse(text: string): { result?: { content?: Array<{ type: string; text?: string }> }; error?: { code: number; message: string } } | null {
+  const trimmed = text.trim()
+  if (!trimmed) return null
+  // SSE: look for "data:" line
+  if (trimmed.includes('data:')) {
+    const dataLines: string[] = []
+    for (const line of trimmed.split('\n')) {
+      const m = /^data:\s*(.*)$/.exec(line)
+      if (m) dataLines.push(m[1])
+    }
+    if (dataLines.length) {
+      try {
+        // Take the last data line (final result for unary call)
+        return JSON.parse(dataLines[dataLines.length - 1])
+      } catch {
+        // Fall through to try plain JSON
+      }
+    }
+  }
+  try { return JSON.parse(trimmed) } catch { return null }
 }
 
 export function parseFrontmatter(content: string): Record<string, string> {
