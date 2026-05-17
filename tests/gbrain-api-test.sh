@@ -1,6 +1,6 @@
 #!/bin/bash
 # Spin up a mock GBrain MCP server, point the backend at it,
-# verify that gbrain.get / gbrain.upsert / gbrain.list JSON-RPC calls
+# verify that get_page / put_page / list_pages JSON-RPC calls (real gbrain tool names)
 # actually hit it.
 
 PASS=0
@@ -23,12 +23,26 @@ pkill -f "tsx.*backend/src/index.ts" 2>/dev/null
 pkill -f "node.*mock-gbrain" 2>/dev/null
 sleep 1
 
-# Write the mock server
+# Write the mock server — speaks the REAL garrytan/gbrain MCP tool names
+# (get_page, put_page, list_pages, add_timeline_entry, add_link, etc.) and
+# returns SSE-framed responses like the real streamable HTTP transport.
 cat > /tmp/mock-gbrain.mjs << 'EOF'
 import http from 'node:http'
 const calls = []
 const docs = new Map()
-docs.set('companies/costco/menu', '---\ntitle: From GBrain\n---\n## Test Item\n- price: 1.00')
+docs.set('costco/companies/costco/menu', '---\ntitle: From GBrain\n---\n## Test Item\n- price: 1.00')
+
+function sse(obj) {
+  return 'event: message\ndata: ' + JSON.stringify(obj) + '\n\n'
+}
+function ok(id, payload) {
+  return sse({
+    jsonrpc: '2.0',
+    id,
+    result: { content: [{ type: 'text', text: JSON.stringify(payload) }] },
+  })
+}
+
 const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && req.url === '/mcp') {
     let body = ''
@@ -42,21 +56,35 @@ const server = http.createServer(async (req, res) => {
       const msg = JSON.parse(body)
       const { name, arguments: args } = msg.params || {}
       calls.push(name)
-      let result
-      if (name === 'gbrain.get') {
-        const content = docs.get(args.path)
-        result = { content: { content: [{ type: 'text', text: JSON.stringify({ content: content ?? null, found: !!content }) }] } }
-      } else if (name === 'gbrain.upsert') {
-        docs.set(args.path, args.content)
-        result = { content: { content: [{ type: 'text', text: JSON.stringify({ ok: true }) }] } }
-      } else if (name === 'gbrain.list') {
-        const matches = [...docs.keys()].filter(k => k.startsWith(args.prefix))
-        result = { content: { content: [{ type: 'text', text: JSON.stringify({ paths: matches }) }] } }
+      let payload
+      if (name === 'get_page') {
+        const content = docs.get(args.slug)
+        payload = content
+          ? { slug: args.slug, content }
+          : { error: 'not_found', slug: args.slug }
+      } else if (name === 'put_page') {
+        docs.set(args.slug, args.content)
+        payload = { slug: args.slug, status: 'created_or_updated', chunks: 1 }
+      } else if (name === 'list_pages') {
+        const pages = [...docs.keys()].map((slug) => ({ slug, type: 'concept' }))
+        payload = pages
+      } else if (name === 'add_timeline_entry') {
+        payload = { id: 1, slug: args.slug, date: args.date, summary: args.summary }
+      } else if (name === 'add_link') {
+        payload = { status: 'ok', from: args.from, to: args.to, link_type: args.link_type }
+      } else if (name === 'traverse_graph') {
+        payload = []
+      } else if (name === 'get_brain_identity') {
+        payload = { version: 'mock-1.0', engine: 'mock', page_count: docs.size }
+      } else if (name === 'get_stats') {
+        payload = { page_count: docs.size, chunk_count: docs.size, embedded_count: 0 }
+      } else if (name === 'query' || name === 'search') {
+        payload = []
       } else {
-        result = { content: { content: [{ type: 'text', text: JSON.stringify({}) }] } }
+        payload = { mock: true, name }
       }
-      res.writeHead(200, { 'content-type': 'application/json' })
-      res.end(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: result.content }))
+      res.writeHead(200, { 'content-type': 'text/event-stream' })
+      res.end(ok(msg.id, payload))
     })
   } else if (req.url === '/_calls') {
     res.writeHead(200); res.end(JSON.stringify(calls))
@@ -98,7 +126,7 @@ sleep 1
 # Check mock got hit
 CALLS=$(curl -s http://localhost:4444/_calls)
 echo "  mock received: $CALLS"
-echo "$CALLS" | grep -q "gbrain.get" && assert "Backend called gbrain.get" "OK" || assert "gbrain.get not called" "FAIL" "$CALLS"
+echo "$CALLS" | grep -q "get_page" && assert "Backend called get_page (real gbrain tool)" "OK" || assert "get_page not called" "FAIL" "$CALLS"
 
 # Trigger a write — save_order with new_preferences always writes a memory fact
 # (regardless of whether the customer profile already exists)
@@ -108,7 +136,9 @@ sleep 2
 
 CALLS=$(curl -s http://localhost:4444/_calls)
 echo "  mock received after write: $CALLS"
-echo "$CALLS" | grep -q "gbrain.upsert" && assert "Backend called gbrain.upsert" "OK" || assert "gbrain.upsert not called" "FAIL" "$CALLS"
+echo "$CALLS" | grep -q "put_page" && assert "Backend called put_page" "OK" || assert "put_page not called" "FAIL" "$CALLS"
+echo "$CALLS" | grep -q "add_timeline_entry" && assert "Backend called add_timeline_entry (new!)" "OK" || assert "add_timeline_entry not called" "FAIL" "$CALLS"
+echo "$CALLS" | grep -q "add_link" && assert "Backend called add_link (new!)" "OK" || assert "add_link not called" "FAIL" "$CALLS"
 
 # Verify menu came from mock (not file) — should have "From GBrain" title
 MENU_NAME=$(echo "$(cat /tmp/api-resp.json)" | jq -r '.results[0].result.company.menu[0].name // empty')
