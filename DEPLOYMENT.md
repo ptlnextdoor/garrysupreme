@@ -32,7 +32,7 @@ Once deployed, set these Railway env vars if desired:
 - `VAPI_SECRET=<from Vapi>`
 - `VAPI_ASSISTANT_ID=<from Vapi>`
 - `VAPI_PHONE_NUMBER_ID=<from Vapi>`
-- `PULSE_DEMO_TOKEN=<shared secret>` optional
+- `PULSE_DEMO_TOKEN=<shared secret>` optional, but leave it unset for the live demo unless Vapi is configured to send `x-pulse-demo-token` or `?token=...`
 
 Optional sponsor sync env vars. Leave unset until real values exist; the backend logs once and continues:
 
@@ -59,6 +59,18 @@ Vapi tool endpoints if using direct tool URLs:
 ## Vapi
 
 To update Vapi automatically we need `VAPI_API_KEY` and assistant/phone IDs. Without that, update the assistant dashboard manually to use the backend URL above.
+
+Use these production URLs:
+
+- Webhook/server URL: `https://<railway-domain>/api/vapi/webhook`
+- Tool URL `get_context`: `https://<railway-domain>/api/context`
+- Tool URL `save_order`: `https://<railway-domain>/api/save_order`
+
+Keep the demo phone number attached to the same assistant:
+
+- `+13203648288`
+
+The `6697320048` returning-caller path depends on Vapi sending the real caller number through the webhook or tool payload. If the assistant says it is having technical or communication issues instead of loading past orders, first verify the deployment branch and Vapi URL wiring before changing code.
 
 ## Convex
 
@@ -105,3 +117,13 @@ npm --workspace @pulse/server run gbrain:seed -- costco
 ```bash
 GBRAIN_HOME="$PWD/.context/real-gbrain-home" gbrain search coffee
 ```
+
+## If the assistant says "technical issues"
+
+Check these in order:
+
+1. Railway is running branch `aayu22809/starbucks-gbrain-demo` on commit `5ff1c13`, `90348b5`, or newer.
+2. Vapi points at `https://<railway-domain>/api/vapi/webhook`, or the direct tool URLs above.
+3. Railway logs show requests to `POST /api/vapi/webhook`, `POST /api/context`, or `POST /api/save_order`.
+4. `PULSE_DEMO_TOKEN` is unset, or Vapi is sending `x-pulse-demo-token` or `?token=...`.
+5. `https://<railway-domain>/health` returns `{"ok":true,"service":"pulse-api"}`.

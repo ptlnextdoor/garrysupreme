@@ -2,7 +2,7 @@ name: Deploy Backend to Railway
 
 on:
   push:
-    branches: [main, aayu22809/starbucks-gbrain-demo]
+    branches: [main, aayu22809/real-gbrain-costco-integration]
     paths:
       - 'convex/**'
       - 'yc-gbrain/server/**'

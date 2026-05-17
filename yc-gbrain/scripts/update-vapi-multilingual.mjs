@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readFile } from "node:fs/promises";
+import { applyPublicUrlToTools } from "./vapi-url.mjs";
 
 const assistantId = process.env.VAPI_ASSISTANT_ID ?? "e629180c-f769-445d-923f-639c3c8ee37a";
 const apiKey = process.env.VAPI_API_KEY;
@@ -18,7 +19,7 @@ if (!publicUrl) {
 const root = new URL("../", import.meta.url);
 const systemPrompt = await readFile(new URL("vapi-system-prompt.txt", root), "utf8");
 const toolsRaw = await readFile(new URL("vapi-tools.json", root), "utf8");
-const tools = JSON.parse(toolsRaw.replaceAll("https://YOUR_PUBLIC_URL", publicUrl.replace(/\/$/, "")));
+const tools = applyPublicUrlToTools(JSON.parse(toolsRaw), publicUrl, process.env.PULSE_DEMO_TOKEN);
 
 const payload = {
   firstMessage: "Hello, Pulse here. I can help in English or Hindi. How can I help today? Namaste, main English ya Hindi mein madad kar sakta hoon. Aapko kya chahiye?",
