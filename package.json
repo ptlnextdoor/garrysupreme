@@ -6,7 +6,8 @@
     "build": "npm --workspace @pulse/server run build && npm --workspace @pulse/dashboard run build",
     "typecheck": "npm --workspace @pulse/server run typecheck && npm --workspace @pulse/dashboard run typecheck",
     "convex:dev": "convex dev",
-    "convex:deploy": "convex deploy"
+    "convex:deploy": "convex deploy",
+    "convex:seed:hog": "tsx scripts/seed-convex-hog-data.ts"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",

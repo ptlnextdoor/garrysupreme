@@ -10,7 +10,7 @@ Public URL:
 ## Backend: Railway
 
 The Fastify backend lives at `yc-gbrain/server` and is configured by `railway.json`.
-For the current demo, Railway can deploy directly from branch `aayu22809/starbucks-gbrain-demo` before merging to `main`.
+Railway should deploy from `main`; `yc-gbrain/server` is the active demo backend.
 
 Required GitHub secrets for auto-deploy:
 
@@ -27,6 +27,7 @@ Once deployed, set these Railway env vars if desired:
 - `DEMO_PHONE=+13203648288`
 - `CONVEX_URL=<from Convex dashboard>`
 - `CONVEX_DEPLOYMENT=<from Convex dashboard>`
+- `CONVEX_WRITE_ENABLED=true`
 - `VAPI_API_KEY=<from Vapi>`
 - `VAPI_SECRET=<from Vapi>`
 - `VAPI_ASSISTANT_ID=<from Vapi>`
@@ -59,20 +60,35 @@ Vapi tool endpoints if using direct tool URLs:
 
 To update Vapi automatically we need `VAPI_API_KEY` and assistant/phone IDs. Without that, update the assistant dashboard manually to use the backend URL above.
 
-## Convex follow-up
+## Convex
 
-Convex is optional but supported. Current backend uses Convex when `CONVEX_URL` is set and falls back to file-backed demo state otherwise. To configure Convex:
+Convex is now the durable demo state path when `CONVEX_URL` and `CONVEX_WRITE_ENABLED=true` are set. The backend still falls back to file-backed state for local development.
 
-1. `npx convex dev` to create/select a Convex deployment.
-2. Deploy the schema/functions in `convex/`.
-3. Store `CONVEX_URL` and `CONVEX_DEPLOYMENT` in Railway env.
-4. Keep Fastify on Railway; Convex is persistence, not the HTTP host.
+Deploy schema/functions:
 
-The Convex functions persist a full `stateSnapshots` document plus normalized `customers`, `orders`, `memoryCandidates`, `activeCalls`, and `workflowEvents` rows for dashboard/debug visibility.
+```bash
+npm run convex:deploy -- --env-file /path/to/.env.local
+```
 
-## Real GBrain branch
+Seed HOG catalog data plus the default Costco-first demo state:
 
-Branch `aayu22809/real-gbrain-costco-integration` is for local real-GBrain testing only. Do not deploy it against production Convex yet.
+```bash
+npm run convex:seed:hog
+```
+
+Store these in Railway env:
+
+- `CONVEX_URL`
+- `CONVEX_DEPLOYMENT`
+- `CONVEX_WRITE_ENABLED=true`
+
+Keep Fastify on Railway; Convex is persistence, not the HTTP host.
+
+The Convex functions persist a full `stateSnapshots` document plus normalized `customers`, `orders`, `memoryCandidates`, `activeCalls`, `workflowEvents`, `companyCatalog`, and `companyPolicies` rows for dashboard/debug visibility.
+
+## Real Local GBrain
+
+Local real-GBrain testing is available from `main`.
 
 - Convex writes are disabled unless `CONVEX_WRITE_ENABLED=true` is explicitly set.
 - Local GBrain calls are disabled unless `GBRAIN_LOCAL_ENABLED=true` is explicitly set.
