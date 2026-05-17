@@ -1,0 +1,11 @@
+category,tags,hot_cold,caffeine_level,dairy_free_possible,sweetness,allergen_notes
+Hot Coffee,"coffee-forward,classic,low-sweetness,breakfast",hot,medium-high,yes with no dairy add-ins or non-dairy milk,low,Cross-contact possible; verify product ingredients for allergens
+Cold Coffee,"iced,coffee-forward,refreshing",cold,medium-high,yes with no dairy add-ins or non-dairy milk,low|medium,Cross-contact possible; cold foam/cream usually dairy unless modified
+Espresso Drinks,"latte,cappuccino,macchiato,americano,customizable",hot|cold,medium-high,often possible with oat/almond/soy/coconut and no whip,low|medium,Milk substitutions do not guarantee allergen-free prep
+Frappuccino Blended Beverages,"dessert-like,blended,sweet,customizable",cold,varies,"sometimes with non-dairy milk, but chips/sauces/whip may contain dairy",high,"Allergen risk higher due sauces, chips, whip, shared blender"
+Refreshers,"fruity,refreshing,light,no-coffee",cold,low-medium,usually yes; coconutmilk versions are non-dairy ingredient choice,medium,Inclusions and bases vary seasonally; caffeine from green coffee extract
+Tea and Chai,"tea,spiced,comfort,customizable",hot|cold,none|low|medium,often possible with non-dairy milk for chai/tea lattes,low|medium,Chai concentrate sweetened; dairy depends on milk choice
+Hot Chocolate and Steamers,"kid-friendly,dessert-like,comfort",hot,none,possible only with non-dairy milk and no whip if sauces compatible,high,Contains/contacts dairy unless carefully modified
+Cold Foam drinks,"creamy,trendy,sweet,texture",cold,varies,usually no because standard cold foam uses dairy,medium|high,Suggest non-dairy alternative only if store offers compatible foam
+Bakery/Food,"snack,breakfast,lunch,not-drink",n/a,none,item-specific,varies,Food allergens must be checked per item; avoid guessing
+Packaged Beverages,"grab-and-go,bottled,low-customization",cold,varies,item-specific,varies,Ingredient label governs; limited customization

@@ -10,6 +10,7 @@ Public URL:
 ## Backend: Railway
 
 The Fastify backend lives at `yc-gbrain/server` and is configured by `railway.json`.
+For the current demo, Railway can deploy directly from branch `aayu22809/starbucks-gbrain-demo` before merging to `main`.
 
 Required GitHub secrets for auto-deploy:
 
@@ -20,9 +21,26 @@ Required GitHub secrets for auto-deploy:
 
 Once deployed, set these Railway env vars if desired:
 
-- `DASHBOARD_ORIGIN=https://web-five-ruby-11.vercel.app`
-- `PULSE_DEMO_TOKEN=<shared secret>` optional
 - `NODE_ENV=production`
+- `FRONTEND_URL=https://web-five-ruby-11.vercel.app`
+- `DASHBOARD_ORIGIN=https://web-five-ruby-11.vercel.app`
+- `DEMO_PHONE=+13203648288`
+- `CONVEX_URL=<from Convex dashboard>`
+- `CONVEX_DEPLOYMENT=<from Convex dashboard>`
+- `VAPI_API_KEY=<from Vapi>`
+- `VAPI_SECRET=<from Vapi>`
+- `VAPI_ASSISTANT_ID=<from Vapi>`
+- `VAPI_PHONE_NUMBER_ID=<from Vapi>`
+- `PULSE_DEMO_TOKEN=<shared secret>` optional
+
+Optional sponsor sync env vars. Leave unset until real values exist; the backend logs once and continues:
+
+- `GBRAIN_API_KEY`
+- `GBRAIN_BASE_URL`
+- `GBRAIN_PROJECT_ID`
+- `GSTACK_API_KEY`
+- `GSTACK_BASE_URL`
+- `GSTACK_PROJECT_ID`
 
 Health URL:
 
@@ -43,9 +61,31 @@ To update Vapi automatically we need `VAPI_API_KEY` and assistant/phone IDs. Wit
 
 ## Convex follow-up
 
-Convex is not configured yet. Current backend uses file-backed demo state in `yc-gbrain/server/src/store.ts`. To move to Convex:
+Convex is optional but supported. Current backend uses Convex when `CONVEX_URL` is set and falls back to file-backed demo state otherwise. To configure Convex:
 
 1. `npx convex dev` to create/select a Convex deployment.
-2. Add tables for customers, orders, memory candidates, active calls, company catalog.
-3. Port Fastify route logic into Convex `httpAction`s or keep Fastify and use Convex as persistence.
-4. Store `CONVEX_URL` / deploy key in Railway env.
+2. Deploy the schema/functions in `convex/`.
+3. Store `CONVEX_URL` and `CONVEX_DEPLOYMENT` in Railway env.
+4. Keep Fastify on Railway; Convex is persistence, not the HTTP host.
+
+The Convex functions persist a full `stateSnapshots` document plus normalized `customers`, `orders`, `memoryCandidates`, `activeCalls`, and `workflowEvents` rows for dashboard/debug visibility.
+
+## Real GBrain branch
+
+Branch `aayu22809/real-gbrain-costco-integration` is for local real-GBrain testing only. Do not deploy it against production Convex yet.
+
+- Convex writes are disabled unless `CONVEX_WRITE_ENABLED=true` is explicitly set.
+- Local GBrain calls are disabled unless `GBRAIN_LOCAL_ENABLED=true` is explicitly set.
+- Seed Costco into an isolated local GBrain with:
+
+```bash
+GBRAIN_LOCAL_ENABLED=true \
+GBRAIN_HOME="$PWD/.context/real-gbrain-home" \
+npm --workspace @pulse/server run gbrain:seed -- costco
+```
+
+- Query the seeded local GBrain via `POST /api/gbrain/local/query` or directly with:
+
+```bash
+GBRAIN_HOME="$PWD/.context/real-gbrain-home" gbrain search coffee
+```
