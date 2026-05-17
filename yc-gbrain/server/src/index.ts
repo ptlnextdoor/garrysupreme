@@ -3,7 +3,7 @@ import websocket from "@fastify/websocket";
 import Fastify, { type FastifyRequest } from "fastify";
 import { z, ZodError } from "zod";
 import { approveMemory, endDemoCall, getContext, getDashboard, learnPreference, listCompanies, recordVapiLifecycle, rejectMemory, resetDemo, saveOrder, searchCompanyCatalog, startDemoCall } from "./store.js";
-import { extractToolArguments, vapiToolResponse } from "./vapi.js";
+import { extractToolArguments, getVapiCallerNumber, getVapiToolName, vapiToolResponse } from "./vapi.js";
 
 const app = Fastify({
   logger: {
@@ -56,6 +56,14 @@ function requireDemoToken(request: FastifyRequest) {
   }
 }
 
+const optionalString = z.union([z.string(), z.number()]).optional().transform((value) => value === undefined ? undefined : String(value));
+const optionalPhone = optionalString.transform((value) => value ?? "unknown");
+const stringList = z.preprocess((value) => {
+  if (Array.isArray(value)) return value;
+  if (typeof value === "string") return value.split(",").map((item) => item.trim()).filter(Boolean);
+  return value;
+}, z.array(z.string()));
+
 app.get("/health", async () => ({ ok: true, service: "pulse-api" }));
 
 app.get("/ws", { websocket: true }, (connection) => {
@@ -80,10 +88,10 @@ app.get("/api/customers/:id", async (request, reply) => {
 
 app.post("/api/context", async (request) => {
   requireDemoToken(request);
-  const args = extractToolArguments(request.body);
+  const args = withCallerPhoneFallback(extractToolArguments(request.body), request.body);
   const schema = z.object({
     company_id: z.string().optional().default("costco"),
-    phone_number: z.string().optional().default("unknown"),
+    phone_number: optionalPhone,
     request: z.string().optional().default(""),
     language: z.enum(["en", "hi"]).optional().default("en")
   });
@@ -103,14 +111,14 @@ app.post("/api/context", async (request) => {
 
 app.post("/api/save_order", async (request) => {
   requireDemoToken(request);
-  const args = extractToolArguments(request.body);
+  const args = withCallerPhoneFallback(extractToolArguments(request.body), request.body);
   const schema = z.object({
     company_id: z.string().optional().default("costco"),
-    customer_name: z.string().optional(),
-    phone_number: z.string().optional(),
-    items: z.array(z.string()).min(1),
-    new_preferences: z.array(z.string()).default([]),
-    confidence: z.number().optional(),
+    customer_name: optionalString,
+    phone_number: optionalString,
+    items: stringList.pipe(z.array(z.string()).min(1)),
+    new_preferences: stringList.default([]),
+    confidence: z.coerce.number().optional(),
     language: z.enum(["en", "hi"]).optional().default("en")
   });
   const parsed = schema.parse(args);
@@ -208,6 +216,9 @@ app.post("/api/demo/reset", async (request) => {
 
 app.post("/api/vapi/webhook", async (request) => {
   requireDemoToken(request);
+  const toolResponse = await handleVapiToolCall(request.body);
+  if (toolResponse) return toolResponse;
+
   const body = request.body as Record<string, unknown>;
   const message = typeof body.message === "object" && body.message !== null ? body.message as Record<string, unknown> : {};
   const call = typeof message.call === "object" && message.call !== null
@@ -230,6 +241,76 @@ app.post("/api/vapi/webhook", async (request) => {
   broadcast("dashboard_updated", await getDashboard());
   return { ok: true, handled_lifecycle: Boolean(lifecycleCall), call: lifecycleCall };
 });
+
+function withCallerPhoneFallback(args: Record<string, unknown>, body: unknown) {
+  if (args.phone_number !== undefined && args.phone_number !== "") return args;
+  const callerNumber = getVapiCallerNumber(body);
+  return callerNumber ? { ...args, phone_number: callerNumber } : args;
+}
+
+async function handleVapiToolCall(body: unknown) {
+  const toolName = getVapiToolName(body);
+  if (!toolName) return null;
+
+  const args = withCallerPhoneFallback(extractToolArguments(body), body);
+  const normalizedToolName = toolName.toLowerCase();
+
+  if (normalizedToolName === "get_context" || normalizedToolName === "context") {
+    const parsed = z.object({
+      company_id: z.string().optional().default("costco"),
+      phone_number: optionalPhone,
+      request: z.string().optional().default(""),
+      language: z.enum(["en", "hi"]).optional().default("en")
+    }).parse(args);
+    const result = await getContext(parsed.company_id, parsed.phone_number, parsed.request, parsed.language);
+    broadcast("context_loaded", {
+      company: result.company.name,
+      customer: result.customer.name,
+      request: parsed.request,
+      language: parsed.language
+    });
+    broadcast("dashboard_updated", await getDashboard());
+    return vapiToolResponse(body, result);
+  }
+
+  if (normalizedToolName === "save_order" || normalizedToolName === "order") {
+    const parsed = z.object({
+      company_id: z.string().optional().default("costco"),
+      customer_name: optionalString,
+      phone_number: optionalString,
+      items: stringList.pipe(z.array(z.string()).min(1)),
+      new_preferences: stringList.default([]),
+      confidence: z.coerce.number().optional(),
+      language: z.enum(["en", "hi"]).optional().default("en")
+    }).parse(args);
+    const order = await saveOrder(parsed);
+    broadcast("order_saved", order);
+    broadcast("dashboard_updated", await getDashboard());
+    return vapiToolResponse(body, { ok: true, order });
+  }
+
+  if (normalizedToolName === "search" || normalizedToolName === "search_catalog") {
+    const parsed = z.object({
+      company_id: z.string().optional().default("costco"),
+      query: z.string().min(1),
+      customer_id: z.string().optional()
+    }).parse(args);
+    const result = await searchCompanyCatalog(parsed.company_id, parsed.query, parsed.customer_id);
+    broadcast("catalog_searched", {
+      company: result.company_id,
+      query: parsed.query,
+      decision: result.decision
+    });
+    broadcast("dashboard_updated", await getDashboard());
+    return vapiToolResponse(body, result);
+  }
+
+  return vapiToolResponse(body, {
+    ok: false,
+    error: `Unknown Pulse tool: ${toolName}`,
+    supported_tools: ["get_context", "save_order", "search_catalog"]
+  });
+}
 
 const port = Number(process.env.PORT ?? 3001);
 const host = process.env.HOST ?? "0.0.0.0";

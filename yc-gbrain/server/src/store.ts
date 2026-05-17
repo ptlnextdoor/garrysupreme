@@ -745,7 +745,9 @@ function customerForPhone(state: State, companyId: CompanyId, phoneNumber: strin
   const demoMatch = process.env.DEMO_PHONE_MATCH ?? "YOUR_NUMBER";
   const demoPhone = process.env.DEMO_PHONE;
   const normalized = phoneNumber || "unknown";
-  if (demoPhone && normalized.replace(/\D/g, "") === demoPhone.replace(/\D/g, "")) return primaryCustomer(state, companyId);
+  const digits = normalized.replace(/\D/g, "");
+  if (demoPhone && digits === demoPhone.replace(/\D/g, "")) return primaryCustomer(state, companyId);
+  if (demoPhone && process.env.DEMO_PHONE_FALLBACK_TO_PRIMARY !== "false" && digits.length >= 7) return primaryCustomer(state, companyId);
   if (normalized.includes(demoMatch) || normalized.includes("1234567")) return primaryCustomer(state, companyId);
   return Object.values(state.customers).find((customer) => customer.companyId === companyId && customer.phone === normalized) ?? state.customers["new-customer"];
 }
