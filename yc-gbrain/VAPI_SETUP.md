@@ -25,6 +25,31 @@ Use the `https://...ngrok-free.app` URL for all Vapi server URLs. If `PULSE_DEMO
 
 Set `DEMO_PHONE_MATCH` to the last 4-7 digits of the phone number you will call from so the planted live demo loads the selected company’s returning-customer brain.
 
+## 2A. Production deployment instead of ngrok
+
+For the live phone demo, use Railway on branch `aayu22809/starbucks-gbrain-demo` at commit `5ff1c13` or newer.
+
+Required URLs:
+
+- Webhook/server URL: `https://<railway-domain>/api/vapi/webhook`
+- `get_context`: `https://<railway-domain>/api/context`
+- `save_order`: `https://<railway-domain>/api/save_order`
+
+Recommended Railway env:
+
+- `FRONTEND_URL=https://web-five-ruby-11.vercel.app`
+- `DASHBOARD_ORIGIN=https://web-five-ruby-11.vercel.app`
+- `DEMO_PHONE=+13203648288`
+- `CONVEX_URL=<from Convex dashboard>`
+- `CONVEX_DEPLOYMENT=<from Convex dashboard>`
+
+For the live demo, leave `PULSE_DEMO_TOKEN` unset unless Vapi is definitely sending `x-pulse-demo-token` or `?token=...` on every webhook and tool request.
+
+The returning-customer demo path for caller `6697320048` depends on the deployment including:
+
+- `90348b5` Harden Vapi tool call handling
+- `5ff1c13` Fix Vapi tool response contract
+
 ## 3. Create the Vapi assistant
 
 1. Create a new assistant in Vapi.
@@ -64,6 +89,15 @@ npm run vapi:update:multilingual
 ```
 
 The assistant prompt now explicitly supports English, Hindi, and Hinglish. The tools also accept `language: "en" | "hi"` so the backend can return a language instruction with the catalog context.
+
+## 3B. Production verification
+
+Before the live call, confirm:
+
+1. `https://<railway-domain>/health` returns `{"ok":true,"service":"pulse-api"}`.
+2. Railway logs show `POST /api/vapi/webhook` or direct `POST /api/context` and `POST /api/save_order` during a test call.
+3. The assistant stays attached to phone number `+13203648288`.
+4. If the assistant says "technical issues" or "communication issues", check Vapi URL wiring and `PULSE_DEMO_TOKEN` before changing prompts or catalog data.
 
 ## 4. Test the exact Costco demo path
 

@@ -2,13 +2,17 @@
 
 import { useEffect, useState } from "react"
 import { Phone, CaretRight, ChatsCircle } from "@phosphor-icons/react/dist/ssr"
+import { ArrowsClockwise, Sparkle } from "@phosphor-icons/react/dist/ssr"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { CallWorkflowPanel } from "@/components/dashboard/call-workflow-panel"
+import { PulseMemoryGraph } from "@/components/dashboard/pulse-memory-graph"
 import { DashboardTopbar } from "@/components/dashboard/topbar"
 import { calls } from "@/lib/mock/calls"
 import { cn } from "@/lib/utils"
 import type { Call } from "@/lib/mock/types"
-import { fetchPulseDashboard, type PulseCall } from "@/lib/pulse-api"
+import { type PulseCall } from "@/lib/pulse-api"
+import { usePulseDashboardLive } from "@/lib/use-pulse-dashboard-live"
 
 function timeAgo(iso: string) {
   const ms = Date.now() - new Date(iso).getTime()
@@ -54,25 +58,37 @@ function callTranscript(call: Call | PulseCall): Array<{ speaker: "customer" | "
 }
 
 export default function CallsPage() {
-  const [liveCalls, setLiveCalls] = useState<PulseCall[] | null>(null)
   const [selectedId, setSelectedId] = useState<string>(calls[0]?.id ?? "")
-  const callRows = liveCalls ?? calls
-  const selected = callRows.find((c) => c.id === selectedId) ?? callRows[0]
+  const { pulse, connectionStatus, lastEventType } = usePulseDashboardLive()
+  const callRows = pulse ? (pulse.allActiveCalls?.length ? pulse.allActiveCalls : pulse.activeCalls) : calls
+  const selected = callRows.find((c) => c.id === selectedId) ?? callRows[0] ?? null
+  const selectedLiveCall = pulse
+    ? pulse.allActiveCalls?.find((call) => call.id === selected?.id)
+      ?? pulse.activeCalls.find((call) => call.id === selected?.id)
+      ?? pulse.allActiveCalls?.[0]
+      ?? pulse.activeCalls[0]
+      ?? null
+    : null
 
   useEffect(() => {
-    fetchPulseDashboard().then((dashboard) => {
-      if (dashboard?.activeCalls.length) {
-        setLiveCalls(dashboard.activeCalls)
-        setSelectedId(dashboard.activeCalls[0].id)
-      }
-    }).catch(() => undefined)
-  }, [])
+    if (selected && selected.id === selectedId) return
+    setSelectedId(selected?.id ?? "")
+  }, [selected, selectedId])
 
   return (
     <>
-      <DashboardTopbar title="Live Calls" subtitle={liveCalls ? "Live Railway call state." : "Every call answered, every transcript saved."} />
+      <DashboardTopbar
+        title="Live Calls"
+        subtitle={
+          pulse
+            ? connectionStatus === "live"
+              ? "Live Railway call state with websocket updates."
+              : "Railway call state with polling fallback."
+            : "Every call answered, every transcript saved."
+        }
+      />
       <div className="p-6 lg:px-12 lg:py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-[320px_minmax(0,1fr)] gap-6 items-start">
           {/* List */}
           <Card className="self-start">
             <CardContent className="p-0 divide-y divide-border">
@@ -121,74 +137,117 @@ export default function CallsPage() {
             </CardContent>
           </Card>
 
-          {/* Detail panel — sits inline on desktop instead of in a Sheet */}
-          <Card className="self-start lg:sticky lg:top-24">
-            {selected ? (
-              <>
-                <div className="px-6 pt-6 pb-4 border-b border-border">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                      <Phone className="w-4 h-4" weight="duotone" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-base font-medium truncate">{callName(selected)}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {timeAgo(selected.startedAt)} · {callDuration(selected)}
+          <div className="space-y-6 self-start min-w-0">
+            <Card>
+              {selected ? (
+                <>
+                  <div className="px-6 pt-6 pb-4 border-b border-border">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                        <Phone className="w-4 h-4" weight="duotone" />
                       </div>
-                    </div>
-                    <Badge
-                      variant="secondary"
-                      className={cn(
-                        isLiveStatus(selected.status)
-                          ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/10"
-                          : selected.status === "escalated"
-                            ? "bg-amber-500/10 text-amber-300 border border-amber-500/20 hover:bg-amber-500/10"
-                            : "",
-                      )}
-                    >
-                      {selected.status}
-                    </Badge>
-                  </div>
-                </div>
-
-                <div className="px-6 py-5 border-b border-border">
-                  <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Outcome</div>
-                  <div className="text-sm">{callOutcome(selected)}</div>
-                </div>
-
-                <div className="px-6 py-5 space-y-3 max-h-[60vh] overflow-y-auto">
-                  <div className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Transcript</div>
-                  {callTranscript(selected).map((turn, i) => (
-                    <div key={i} className={cn("flex", turn.speaker === "agent" && "justify-end")}>
-                      <div
+                      <div className="flex-1 min-w-0">
+                        <div className="text-base font-medium truncate">{callName(selected)}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {timeAgo(selected.startedAt)} · {callDuration(selected)}
+                        </div>
+                      </div>
+                      <Badge
+                        variant="secondary"
                         className={cn(
-                          "max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed",
-                          turn.speaker === "agent"
-                            ? "bg-primary text-primary-foreground rounded-br-sm"
-                            : "bg-muted text-foreground rounded-bl-sm",
+                          isLiveStatus(selected.status)
+                            ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/10"
+                            : selected.status === "escalated"
+                              ? "bg-amber-500/10 text-amber-300 border border-amber-500/20 hover:bg-amber-500/10"
+                              : "",
                         )}
                       >
+                        {selected.status}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="px-6 py-5 border-b border-border">
+                    <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Outcome</div>
+                    <div className="text-sm">{callOutcome(selected)}</div>
+                  </div>
+
+                  <div className="px-6 py-5 space-y-3 max-h-[52vh] overflow-y-auto">
+                    <div className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Transcript</div>
+                    {callTranscript(selected).map((turn, i) => (
+                      <div key={i} className={cn("flex", turn.speaker === "agent" && "justify-end")}>
                         <div
                           className={cn(
-                            "text-[10px] uppercase tracking-wider mb-1",
-                            turn.speaker === "agent" ? "opacity-80" : "text-muted-foreground",
+                            "max-w-[78%] rounded-2xl px-3 py-2 text-sm leading-relaxed break-words",
+                            turn.speaker === "agent"
+                              ? "bg-primary text-primary-foreground rounded-br-sm"
+                              : "bg-muted text-foreground rounded-bl-sm",
                           )}
                         >
-                          {turn.speaker === "agent" ? "hey, G!" : "customer"}
+                          <div
+                            className={cn(
+                              "text-[10px] uppercase tracking-wider mb-1",
+                              turn.speaker === "agent" ? "opacity-80" : "text-muted-foreground",
+                            )}
+                          >
+                            {turn.speaker === "agent" ? "hey, G!" : "customer"}
+                          </div>
+                          {turn.text}
                         </div>
-                        {turn.text}
                       </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <CardContent className="py-20 text-center text-muted-foreground">
+                  <ChatsCircle className="w-8 h-8 mx-auto mb-3 opacity-60" weight="duotone" />
+                  <div className="text-sm">Select a call to view its transcript.</div>
+                </CardContent>
+              )}
+            </Card>
+
+            <CallWorkflowPanel
+              call={selectedLiveCall}
+              pulse={pulse}
+              connectionStatus={connectionStatus}
+              lastEventType={lastEventType}
+            />
+
+            {pulse && selectedLiveCall && (
+              <Card>
+                <CardHeader className="space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <CardTitle className="text-lg">Live Memory Graph</CardTitle>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Live graph for the selected demo call. New memory nodes glow first, then persist.
+                      </p>
                     </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <CardContent className="py-20 text-center text-muted-foreground">
-                <ChatsCircle className="w-8 h-8 mx-auto mb-3 opacity-60" weight="duotone" />
-                <div className="text-sm">Select a call to view its transcript.</div>
-              </CardContent>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="secondary" className="border border-border bg-muted/30">
+                        <ArrowsClockwise className="mr-1 h-3.5 w-3.5" weight="duotone" />
+                        {connectionStatus}
+                      </Badge>
+                      {pulse.graph.previewNodeIds.length > 0 && (
+                        <Badge variant="secondary" className="border border-amber-500/20 bg-amber-500/10 text-amber-300">
+                          <Sparkle className="mr-1 h-3.5 w-3.5" weight="duotone" />
+                          {pulse.graph.previewNodeIds.length} previewing
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <PulseMemoryGraph
+                    graph={pulse.graph}
+                    companyId={selectedLiveCall.companyId}
+                    callId={selectedLiveCall.id}
+                    compact
+                  />
+                </CardContent>
+              </Card>
             )}
-          </Card>
+          </div>
         </div>
       </div>
     </>

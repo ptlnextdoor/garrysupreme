@@ -56,6 +56,7 @@ export type ActiveCall = {
   intent: string;
   transcript: string[];
   currentOrder: string[];
+  flow?: CallFlow;
 };
 
 export type Order = {
@@ -78,6 +79,70 @@ export type WorkflowEvent = {
   created_at: string;
 };
 
+export type CallFlowMatch = {
+  name: string;
+  why: string;
+  confidence?: number;
+  confidence_label?: "high" | "medium" | "low";
+  review_reasons?: string[];
+  stock?: string;
+};
+
+export type CallFlow = {
+  language: string;
+  request: string;
+  companySignals: string[];
+  customerSignals: string[];
+  matchedItems: CallFlowMatch[];
+  decision: "ready-to-order" | "review" | "clarify" | "no-match";
+  clarifyingQuestion?: string | null;
+  agentReply: string;
+  nextAction: string;
+};
+
+export type GraphNodeType = "company" | "catalog_item" | "customer" | "preference" | "insight" | "call";
+
+export type GraphLinkKind =
+  | "prefers"
+  | "orders"
+  | "avoids"
+  | "hosts"
+  | "shops_for"
+  | "translated_to"
+  | "recommended"
+  | "learned_from_call"
+  | "related_to";
+
+export type GraphNode = {
+  id: string;
+  label: string;
+  type: GraphNodeType;
+  companyId: CompanyId;
+  side: "business" | "customer" | "bridge";
+  detail: string;
+  markdown: string;
+  active?: boolean;
+  previewForCallId?: string | null;
+};
+
+export type GraphLink = {
+  id: string;
+  source: string;
+  target: string;
+  kind: GraphLinkKind;
+  companyId: CompanyId;
+  detail: string;
+  active?: boolean;
+  previewForCallId?: string | null;
+};
+
+export type GraphState = {
+  nodes: GraphNode[];
+  links: GraphLink[];
+  focusCallId: string | null;
+  lastMutationAt: string | null;
+};
+
 export type State = {
   selectedCompanyId: CompanyId;
   activeCalls: ActiveCall[];
@@ -86,6 +151,7 @@ export type State = {
   orders: Order[];
   workflowEvents: WorkflowEvent[];
   lastSearch: CatalogSearchResponse | null;
+  graph: GraphState;
 };
 
 let writeQueue: Promise<unknown> = Promise.resolve();
@@ -99,7 +165,7 @@ const costcoHouseholdCustomer: CustomerProfile = {
   avoids: ["dairy", "highly processed kids snacks", "non-organic produce when an organic option exists"],
   style: "direct and friendly Costco member, mixes quick fill-in trips with big monthly household hauls",
   language: "English, Hindi/Hinglish supported",
-  lastOrder: "Kirkland almond milk, Costco rotisserie chicken, Goldfish variety pack, Kirkland trail mix, bath tissue",
+  lastOrder: "Two Costco rotisserie chickens for game night, almond milk, berries, cauliflower pizza, and bath tissue",
   recurringItems: ["Kirkland almond milk", "Kirkland organic coffee", "salmon fillets", "Goldfish variety pack", "Kirkland bath tissue", "Kirkland paper towels"],
   budgetThreshold: 500,
   household: [
@@ -145,12 +211,12 @@ const starbucksCustomer: CustomerProfile = {
   companyId: "starbucks",
   phone: "+15557654321",
   name: "Aayushya",
-  likes: ["oat milk", "half sweet", "plain English", "chai", "low caffeine after 2pm"],
+  likes: ["masala chai flavor", "extra spice", "sweet hot drinks", "Hindi/Hinglish comfort", "plain English translation when needed"],
   avoids: ["dairy"],
-  style: "plain English, no Starbucks jargon",
-  language: "English, Hindi/Hinglish supported",
-  lastOrder: "Grande iced chai latte, oat milk, half sweet",
-  recurringItems: ["iced chai latte", "oat milk", "half sweet"],
+  style: "Hindi-friendly, wants Starbucks translated into plain language and home-style chai guidance",
+  language: "Hindi/Hinglish preferred, English okay",
+  lastOrder: "Grande hot chai latte with extra spice, ordered in Hindi",
+  recurringItems: ["grande chai latte", "extra spice", "hot sweet chai"],
   budgetThreshold: 35,
   household: [
     {
@@ -176,55 +242,152 @@ const newCustomer: CustomerProfile = {
   confidence: 0
 };
 
+const seededCostcoHostingFlow: CallFlow = {
+  language: "en",
+  request: "Actually hosting 15 people Saturday, mostly vegetarian.",
+  companySignals: [
+    "Costco party-size packaging and pantry/bakery/frozen event coverage",
+    "Saturday hosting plan should include a stock check before committing perishables"
+  ],
+  customerSignals: [
+    "Returning customer last bought rotisserie chickens for game night",
+    "Event size is 15 guests and mostly vegetarian"
+  ],
+  matchedItems: [
+    {
+      name: "Spinach artichoke dip tray",
+      why: "Vegetarian appetizer for a crowd with minimal prep",
+      confidence: 0.95,
+      confidence_label: "high",
+      review_reasons: ["closest-warehouse stock check"],
+      stock: "check nearest Costco"
+    },
+    {
+      name: "Four pound berries",
+      why: "Simple fruit side that scales well for 15 guests",
+      confidence: 0.91,
+      confidence_label: "high",
+      review_reasons: ["weekend produce availability"],
+      stock: "check nearest Costco"
+    },
+    {
+      name: "Cauliflower pizza two pack",
+      why: "Vegetarian main that fits the hosting brief quickly",
+      confidence: 0.88,
+      confidence_label: "medium",
+      review_reasons: ["frozen inventory check"],
+      stock: "check nearest Costco"
+    }
+  ],
+  decision: "review",
+  clarifyingQuestion: "Want me to check stock at your closest Costco?",
+  agentReply: "Got it, switching it up. Spinach artichoke dip tray, the four pound berries, cauliflower pizza two pack. Covers app, fruit, main. Want me to check stock at your closest Costco?",
+  nextAction: "Await stock-check approval before finalizing the basket."
+};
+
+const seededStarbucksHindiFlow: CallFlow = {
+  language: "hi",
+  request: "Mujhe India jaisi chai chahiye, spicy, sweet, hot, bilkul ghar jaisi.",
+  companySignals: [
+    "Translate a home-style chai request into the closest Starbucks hot chai build",
+    "Stay in Hindi/Hinglish and avoid jargon unless it helps close the order"
+  ],
+  customerSignals: [
+    "Caller explicitly feels more comfortable speaking Hindi",
+    "Preference is spicy, sweet, hot chai that feels like home"
+  ],
+  matchedItems: [
+    {
+      name: "Grande Chai Latte",
+      why: "Closest standard Starbucks drink to a sweet hot chai base",
+      confidence: 0.96,
+      confidence_label: "high",
+      review_reasons: [],
+      stock: "standard menu item"
+    },
+    {
+      name: "Extra spice customization",
+      why: "Pushes the flavor closer to masala chai expectations",
+      confidence: 0.9,
+      confidence_label: "high",
+      review_reasons: [],
+      stock: "modifier availability may vary by store"
+    }
+  ],
+  decision: "ready-to-order",
+  clarifyingQuestion: null,
+  agentReply: "Bilkul. Lagta hai aapko ek grande chai latte extra spice ke saath chahiye. Kya main woh order kar doon?",
+  nextAction: "Order is ready to place after the caller's yes."
+};
+
+function seededActiveCalls(now = Date.now()): ActiveCall[] {
+  return [
+    {
+      id: "call_live_costco",
+      companyId: "costco",
+      customerName: "Aarya",
+      phone: "+17028619093",
+      startedAt: new Date(now).toISOString(),
+      status: "ordering",
+      intent: "Hosting 15 people Saturday, mostly vegetarian",
+      transcript: [
+        "Hey, welcome back. Last time you grabbed the rotisserie chickens for game night. Doing something similar?",
+        "Actually hosting 15 people Saturday, mostly vegetarian.",
+        "Got it, switching it up. Spinach artichoke dip tray, the four pound berries, cauliflower pizza two pack. Covers app, fruit, main. Want me to check stock at your closest Costco?",
+        "Awesome!"
+      ],
+      currentOrder: ["Spinach artichoke dip tray", "Four pound berries", "Cauliflower pizza two pack"],
+      flow: seededCostcoHostingFlow
+    },
+    {
+      id: "call_live_costco_office",
+      companyId: "costco",
+      customerName: "Maya Patel",
+      phone: "+15551234567",
+      startedAt: new Date(now - 30_000).toISOString(),
+      status: "context loaded",
+      intent: "Ready for Costco office-event demo",
+      transcript: ["Pulse: Office-event customer brain is ready for Maya."],
+      currentOrder: []
+    },
+    {
+      id: "call_live_starbucks",
+      companyId: "starbucks",
+      customerName: "Aayushya",
+      phone: "+15557654321",
+      startedAt: new Date(now - 45_000).toISOString(),
+      status: "confirmed",
+      intent: "Hindi chai translation demo",
+      transcript: [
+        "Hey, this is Starbucks, how can I help?",
+        "Hi, I feel easier talking in Hindi, can I order in Hindi?",
+        "Bilkul, aap Hindi mein order kar sakte hain. Main kaise help karun?",
+        "Mujhe India jaisi chai chahiye, spicy, sweet, hot, bilkul ghar jaisi.",
+        "Bilkul. Lagta hai aapko ek grande chai latte extra spice ke saath chahiye. Kya main woh order kar doon?",
+        "Yes."
+      ],
+      currentOrder: ["Grande Chai Latte", "Extra spice"],
+      flow: seededStarbucksHindiFlow
+    },
+    {
+      id: "call_live_review",
+      companyId: "costco",
+      customerName: "Community event",
+      phone: "+15555550109",
+      startedAt: new Date(now - 90_000).toISOString(),
+      status: "escalated",
+      intent: "Food and supplies for 80-person breakfast",
+      transcript: ["Pulse: Large perishable community event needs review for timing and dietary details."],
+      currentOrder: []
+    }
+  ];
+}
+
 function initialState(companyId: CompanyId = "costco"): State {
-  return {
+  const activeCalls = seededActiveCalls();
+  const state: State = {
     selectedCompanyId: companyId,
-    activeCalls: [
-      {
-        id: "call_live_costco",
-        companyId: "costco",
-        customerName: "Aarya",
-        phone: "+17028619093",
-        startedAt: new Date().toISOString(),
-        status: "ringing",
-        intent: "Personal Costco quick run or big monthly household haul",
-        transcript: ["Pulse: Waiting for Aarya to call Costco household concierge."],
-        currentOrder: []
-      },
-      {
-        id: "call_live_costco_office",
-        companyId: "costco",
-        customerName: "Maya Patel",
-        phone: "+15551234567",
-        startedAt: new Date(Date.now() - 30_000).toISOString(),
-        status: "context loaded",
-        intent: "Ready for Costco office-event demo",
-        transcript: ["Pulse: Office-event customer brain is ready for Maya."],
-        currentOrder: []
-      },
-      {
-        id: "call_live_starbucks",
-        companyId: "starbucks",
-        customerName: "Aayushya",
-        phone: "+15557654321",
-        startedAt: new Date(Date.now() - 45_000).toISOString(),
-        status: "context loaded",
-        intent: "Secondary Starbucks plain-English menu demo",
-        transcript: ["Caller: I do not know Starbucks words. I want something warm and cozy."],
-        currentOrder: []
-      },
-      {
-        id: "call_live_review",
-        companyId: "costco",
-        customerName: "Community event",
-        phone: "+15555550109",
-        startedAt: new Date(Date.now() - 90_000).toISOString(),
-        status: "escalated",
-        intent: "Food and supplies for 80-person breakfast",
-        transcript: ["Pulse: Large perishable community event needs review for timing and dietary details."],
-        currentOrder: []
-      }
-    ],
+    activeCalls,
     customers: {
       [costcoHouseholdCustomer.id]: costcoHouseholdCustomer,
       [costcoOfficeCustomer.id]: costcoOfficeCustomer,
@@ -254,8 +417,8 @@ function initialState(companyId: CompanyId = "costco"): State {
         id: "mem_starbucks_plain_english",
         companyId: "starbucks",
         customer: "Aayushya",
-        claim: "Customer prefers plain-English Starbucks translations and oat milk by default.",
-        evidence: "Seeded Starbucks customer brain for secondary demo.",
+        claim: "Customer prefers Hindi/Hinglish ordering support and home-style spicy hot chai guidance.",
+        evidence: "Seeded Starbucks Hindi comfort demo for live calls.",
         confidence: 0.88,
         status: "pending"
       }
@@ -286,15 +449,59 @@ function initialState(companyId: CompanyId = "costco"): State {
         company_id: "starbucks",
         customer_name: "Aayushya",
         phone_number: "+15557654321",
-        items: ["Grande iced chai latte, oat milk, half sweet"],
+        items: ["Grande chai latte", "Extra spice"],
         new_preferences: [],
         confidence: 0.9,
         created_at: new Date(Date.now() - 2 * 60 * 60_000).toISOString()
       }
     ],
     workflowEvents: workflowTemplate(),
-    lastSearch: null
+    lastSearch: null,
+    graph: initialGraphState(activeCalls)
   };
+
+  const seededCostcoCall = activeCalls.find((call) => call.id === "call_live_costco");
+  if (seededCostcoCall?.flow) {
+    previewGraphForCall(state, {
+      call: seededCostcoCall,
+      companyId: "costco",
+      customer: costcoHouseholdCustomer,
+      request: seededCostcoCall.flow.request,
+      language: "en",
+      result: catalogSearchFromFlow("costco", seededCostcoCall.flow),
+      flow: seededCostcoCall.flow
+    });
+  }
+
+  const seededStarbucksCall = activeCalls.find((call) => call.id === "call_live_starbucks");
+  if (seededStarbucksCall?.flow) {
+    previewGraphForCall(state, {
+      call: seededStarbucksCall,
+      companyId: "starbucks",
+      customer: starbucksCustomer,
+      request: seededStarbucksCall.flow.request,
+      language: "hi",
+      result: catalogSearchFromFlow("starbucks", seededStarbucksCall.flow),
+      flow: seededStarbucksCall.flow
+    });
+    commitGraphForCall(state, seededStarbucksCall.id, {
+      companyId: "starbucks",
+      customer: starbucksCustomer,
+      call: seededStarbucksCall,
+      order: {
+        id: "seed_starbucks_graph_commit",
+        company_id: "starbucks",
+        customer_name: "Aayushya",
+        phone_number: seededStarbucksCall.phone,
+        items: seededStarbucksCall.currentOrder,
+        new_preferences: [],
+        confidence: 0.96,
+        created_at: seededStarbucksCall.startedAt
+      }
+    });
+  }
+
+  return state;
 }
 
 async function ensureDirs() {
@@ -369,11 +576,13 @@ export async function getDashboard() {
     companies,
     company,
     activeCalls: state.activeCalls.filter((call) => call.companyId === selectedCompanyId),
+    allActiveCalls: state.activeCalls,
     customers: Object.values(state.customers).filter((customer) => customer.companyId === selectedCompanyId || customer.id === "new-customer"),
     memoryCandidates: state.memoryCandidates.filter((candidate) => candidate.companyId === selectedCompanyId),
     orders: companyOrders,
     workflowEvents: state.workflowEvents,
     lastSearch: state.lastSearch?.company_id === selectedCompanyId ? state.lastSearch : null,
+    graph: graphSnapshot(state.graph),
     demoQueries,
     metrics: {
       activeCalls: state.activeCalls.filter((call) => call.companyId === selectedCompanyId).length,
@@ -397,6 +606,25 @@ export async function searchCompanyCatalog(companyIdInput: unknown, query: strin
     pushWorkflow(state, "Customer Brain", "done", `${customer.name} profile loaded`, customer.lastOrder);
     const result = await searchCatalog({ companyId, query, customer });
     state.lastSearch = result;
+    const call = activeCallFor(state, companyId, "");
+    if (call) {
+      call.flow = flowFromSearch({
+        companyName: companyDefinitions[companyId].name,
+        customer,
+        language: "en",
+        request: query,
+        result
+      });
+      previewGraphForCall(state, {
+        call,
+        companyId,
+        customer,
+        request: query,
+        language: "en",
+        result,
+        flow: call.flow
+      });
+    }
     pushWorkflow(state, "Catalog Matcher", "done", `${result.results.length} matches`, `${result.decision} · ${result.meta.latency_ms}ms`);
     pushWorkflow(state, "Review Gate", result.decision === "ready-to-order" ? "done" : "review", result.decision, result.meta.clarifying_question ?? "No clarifying question needed");
     return result;
@@ -419,6 +647,22 @@ export async function getContext(companyIdInput: unknown, phoneNumber: string, r
       call.transcript.push(`Caller: ${request || "Asked for help."}`);
       call.transcript.push(`Pulse: Loaded separate ${company.name} Company Brain + ${customer.name} Customer Brain (${language}).`);
       call.transcript.push(`Pulse: Catalog Matcher decision is ${result.decision}.`);
+      call.flow = flowFromSearch({
+        companyName: company.name,
+        customer,
+        language,
+        request,
+        result
+      });
+      previewGraphForCall(state, {
+        call,
+        companyId,
+        customer,
+        request,
+        language,
+        result,
+        flow: call.flow
+      });
     }
 
     pushWorkflow(state, "Call", "done", `${company.name} inbound request`, request || "No request text");
@@ -461,7 +705,7 @@ export async function saveOrder(input: {
   confidence?: number;
 }) {
   const companyId = normalizeCompanyId(input.company_id);
-  const order = await updateState((state) => {
+    const order = await updateState((state) => {
     state.selectedCompanyId = companyId;
     const nextOrder: Order = {
       id: `order_${Date.now()}`,
@@ -480,6 +724,20 @@ export async function saveOrder(input: {
       call.status = "confirmed";
       call.currentOrder = nextOrder.items;
       call.transcript.push(`Pulse: Confirmed ${nextOrder.items.join(" and ")}.`);
+      call.flow = {
+        ...(call.flow ?? flowFromOrderFallback(state, companyId, nextOrder)),
+        decision: "ready-to-order",
+        agentReply: `Confirmed ${nextOrder.items.join(", ")}.`,
+        nextAction: nextOrder.new_preferences.length
+          ? `Order saved and ${nextOrder.new_preferences.length} memory candidate(s) queued.`
+          : "Order saved."
+      };
+      commitGraphForCall(state, call.id, {
+        companyId,
+        customer: customerForGraph(state, companyId, nextOrder.customer_name, input.phone_number),
+        call,
+        order: nextOrder
+      });
     }
 
     for (const preference of nextOrder.new_preferences) {
@@ -491,6 +749,13 @@ export async function saveOrder(input: {
         evidence: `Learned from confirmed ${companyDefinitions[companyId].name} order ${nextOrder.id}.`,
         confidence: nextOrder.confidence,
         status: "pending"
+      });
+      commitPreferenceToGraph(state, {
+        companyId,
+        customer: customerForGraph(state, companyId, nextOrder.customer_name, input.phone_number),
+        preference,
+        confidence: nextOrder.confidence,
+        callId: call?.id ?? null
       });
     }
 
@@ -534,6 +799,13 @@ export async function approveMemory(id: string) {
     const normalized = normalizeMemoryClaim(memory.claim);
     if (!customer.likes.includes(normalized)) customer.likes.push(normalized);
     customer.confidence = Math.min(0.99, customer.confidence + 0.01);
+    commitPreferenceToGraph(state, {
+      companyId: memory.companyId,
+      customer: customerByName(state, memory.companyId, memory.customer) ?? customer,
+      preference: normalized,
+      confidence: memory.confidence,
+      callId: state.graph.focusCallId
+    });
     pushWorkflow(state, "Order/Memory Write", "done", "Memory approved", memory.claim);
     void syncSponsorEvent({
       type: "memory_approved",
@@ -549,6 +821,7 @@ export async function rejectMemory(id: string) {
     const memory = state.memoryCandidates.find((candidate) => candidate.id === id);
     if (!memory) return null;
     memory.status = "rejected";
+    discardPreviewPreference(state, memory.companyId, memory.claim);
     pushWorkflow(state, "Order/Memory Write", "review", "Memory rejected", memory.claim);
     return memory;
   });
@@ -567,6 +840,13 @@ export async function learnPreference(customerName: string, preference: string, 
       status: "pending"
     };
     state.memoryCandidates.unshift(memory);
+    commitPreferenceToGraph(state, {
+      companyId,
+      customer: customerByName(state, companyId, customerName) ?? primaryCustomer(state, companyId),
+      preference,
+      confidence,
+      callId: state.graph.focusCallId
+    });
     pushWorkflow(state, "Order/Memory Write", "done", "Memory candidate created", preference);
     return memory;
   });
@@ -607,6 +887,7 @@ export async function recordVapiLifecycle(input: {
         currentOrder: []
       };
       state.activeCalls.unshift(call);
+      ensureCallNode(state.graph, call);
     }
 
     if (!call) return null;
@@ -615,11 +896,18 @@ export async function recordVapiLifecycle(input: {
       call.phone = phone;
       call.customerName = customer?.name ?? call.customerName;
       call.transcript.push(`Vapi: ${input.event}`);
+      touchGraph(state.graph, call.id);
+      setGraphNodeActive(state.graph, callNodeId(call.id), true);
       pushWorkflow(state, "Call", "active", "Vapi call lifecycle", `${call.customerName} · ${input.event}`);
     }
     if (isEnd) {
       call.status = "ended";
       call.transcript.push(`Vapi: ${input.event}`);
+      commitGraphForCall(state, call.id, {
+        companyId,
+        customer: customer ?? primaryCustomer(state, companyId),
+        call
+      });
       pushWorkflow(state, "Call", "done", "Vapi call ended", call.customerName);
     }
     void syncSponsorEvent({
@@ -642,6 +930,9 @@ export async function startDemoCall(companyIdInput: unknown = "costco") {
     call.intent = companyId === "costco" ? "Incoming Costco office-event call" : "Incoming Starbucks menu-translation call";
     call.currentOrder = [];
     call.transcript = [`Pulse: Incoming call for ${companyDefinitions[companyId].name}.`];
+    ensureCallNode(state.graph, call);
+    touchGraph(state.graph, call.id);
+    setGraphNodeActive(state.graph, callNodeId(call.id), true);
     state.workflowEvents = workflowTemplate();
     pushWorkflow(state, "Call", "active", "Inbound call started", companyDefinitions[companyId].name);
     return call;
@@ -655,6 +946,11 @@ export async function endDemoCall(companyIdInput: unknown = "costco") {
     if (!call) return null;
     call.status = "ended";
     call.transcript.push("Pulse: Call ended.");
+    commitGraphForCall(state, call.id, {
+      companyId,
+      customer: customerForGraph(state, companyId, call.customerName, call.phone),
+      call
+    });
     return call;
   });
 }
@@ -721,6 +1017,22 @@ async function readCustomerMarkdown(id: string) {
 
 function migrateState(input: Partial<State>): State {
   const fallback = initialState(normalizeCompanyId(input.selectedCompanyId));
+  const fallbackCalls = new Map(fallback.activeCalls.map((call) => [call.id, call]));
+  const inputCalls = Array.isArray(input.activeCalls) ? input.activeCalls as ActiveCall[] : [];
+  const mergedCalls = fallback.activeCalls.map((fallbackCall) => {
+    const existing = inputCalls.find((candidate) => candidate.id === fallbackCall.id);
+    if (!existing) return fallbackCall;
+    const preserveExistingFlow = Boolean(existing.flow);
+    return {
+      ...fallbackCall,
+      ...existing,
+      transcript: preserveExistingFlow ? existing.transcript : fallbackCall.transcript,
+      currentOrder: preserveExistingFlow ? existing.currentOrder : fallbackCall.currentOrder,
+      flow: existing.flow ?? fallbackCall.flow
+    };
+  }).concat(
+    inputCalls.filter((call) => !fallbackCalls.has(call.id))
+  );
   return {
     ...fallback,
     ...input,
@@ -729,11 +1041,12 @@ function migrateState(input: Partial<State>): State {
       ...fallback.customers,
       ...(input.customers ?? {})
     },
-    activeCalls: Array.isArray(input.activeCalls) && input.activeCalls.every((call) => "companyId" in call) ? input.activeCalls : fallback.activeCalls,
+    activeCalls: mergedCalls,
     memoryCandidates: Array.isArray(input.memoryCandidates) && input.memoryCandidates.every((memory) => "companyId" in memory) ? input.memoryCandidates : fallback.memoryCandidates,
     orders: Array.isArray(input.orders) && input.orders.every((order) => "company_id" in order) ? input.orders : fallback.orders,
     workflowEvents: input.workflowEvents?.length ? input.workflowEvents : fallback.workflowEvents,
-    lastSearch: input.lastSearch ?? null
+    lastSearch: input.lastSearch ?? null,
+    graph: isGraphState(input.graph) ? migrateGraph(input.graph, mergedCalls) : fallback.graph
   };
 }
 
@@ -773,6 +1086,106 @@ function pushWorkflow(state: State, node: WorkflowEvent["node"], status: Workflo
   ].slice(0, 24);
 }
 
+function flowFromSearch(input: {
+  companyName: string;
+  customer: CustomerProfile;
+  language: "en" | "hi";
+  request: string;
+  result: CatalogSearchResponse;
+}): CallFlow {
+  const topSignals = [
+    input.customer.lastOrder,
+    ...input.customer.likes.slice(0, 2)
+  ].filter(Boolean);
+
+  return {
+    language: input.language,
+    request: input.request,
+    companySignals: [
+      `${input.companyName} company brain loaded`,
+      `Catalog size: ${input.result.meta.catalog_count} rows`
+    ],
+    customerSignals: topSignals,
+    matchedItems: input.result.results.slice(0, 5).map((match) => ({
+      name: match.name,
+      why: match.match_evidence[0] ?? match.category,
+      confidence: match.confidence,
+      confidence_label: match.confidence_label,
+      review_reasons: match.review_reasons,
+      stock: match.stock_seed
+    })),
+    decision: input.result.decision,
+    clarifyingQuestion: input.result.meta.clarifying_question,
+    agentReply: input.result.meta.clarifying_question ?? `Best match: ${input.result.results[0]?.name ?? "No match found."}`,
+    nextAction: input.result.decision === "ready-to-order"
+      ? "Ready to save the order."
+      : input.result.decision === "review"
+        ? "Needs confirmation or review before ordering."
+        : input.result.decision === "clarify"
+          ? "Ask a clarifying question before ordering."
+          : "No safe match yet."
+  };
+}
+
+function flowFromOrderFallback(state: State, companyId: CompanyId, order: Order): CallFlow {
+  const customer = primaryCustomer(state, companyId);
+  return {
+    language: "en",
+    request: order.items.join(", "),
+    companySignals: [`${companyDefinitions[companyId].name} order save path`],
+    customerSignals: [customer.lastOrder],
+    matchedItems: order.items.map((item) => ({
+      name: item,
+      why: "Confirmed item in the saved order"
+    })),
+    decision: "ready-to-order",
+    clarifyingQuestion: null,
+    agentReply: `Confirmed ${order.items.join(", ")}.`,
+    nextAction: "Order saved."
+  };
+}
+
+function catalogSearchFromFlow(companyId: CompanyId, flow: CallFlow): CatalogSearchResponse {
+  return {
+    company_id: companyId,
+    query: flow.request,
+    results: flow.matchedItems.map((match, index) => ({
+      rank: index + 1,
+      sku: `${companyId}_${slugify(match.name)}_${index + 1}`,
+      catalog_id: `${companyId}_${slugify(match.name)}_${index + 1}`,
+      name: match.name,
+      description: match.why,
+      category: "Seeded demo graph match",
+      score: match.confidence ?? 0.9,
+      confidence: match.confidence ?? 0.9,
+      confidence_label: match.confidence_label ?? "high",
+      personalized: index === 0,
+      personalization_note: index === 0 ? flow.customerSignals[0] ?? null : null,
+      match_evidence: [match.why],
+      review_reasons: match.review_reasons ?? [],
+      can_auto_order: flow.decision === "ready-to-order",
+      stock_seed: match.stock?.includes("out")
+        ? "out_of_stock"
+        : match.stock?.includes("low")
+          ? "low_stock"
+          : match.stock?.includes("check") || match.stock?.includes("location")
+            ? "location_required"
+            : "in_stock",
+      price_band_seed: "seeded"
+    })),
+    decision: flow.decision,
+    meta: {
+      catalog_count: flow.matchedItems.length,
+      latency_ms: 112,
+      low_confidence_overall: flow.matchedItems.some((match) => (match.confidence ?? 0) < 0.8),
+      ambiguous_query: flow.decision !== "ready-to-order" && flow.matchedItems.length > 1,
+      review_required: flow.decision !== "ready-to-order",
+      clarifying_question: flow.clarifyingQuestion ?? null
+    }
+  };
+}
+
+
 function workflowTemplate(): WorkflowEvent[] {
   return (["Call", "Company Brain", "Customer Brain", "Catalog Matcher", "Review Gate", "Order/Memory Write"] as WorkflowEvent["node"][]).map((node) => ({
     id: `wf_seed_${node.replace(/\W+/g, "_")}`,
@@ -795,4 +1208,577 @@ function normalizeMemoryClaim(claim: string) {
     .replace(/^customer likes\s+/i, "")
     .replace(/\.$/, "")
     .trim();
+}
+
+function initialGraphState(calls: ActiveCall[]): GraphState {
+  const graph: GraphState = {
+    nodes: [],
+    links: [],
+    focusCallId: null,
+    lastMutationAt: new Date().toISOString()
+  };
+
+  for (const companyId of Object.keys(companyDefinitions) as CompanyId[]) {
+    upsertNode(graph, companyNode(companyId));
+  }
+
+  upsertNode(graph, insightNode("costco", "party-size-assortments", "Party-size assortments", "The Costco company brain emphasizes crowd coverage, frozen mains, and warehouse stock checks."));
+  upsertNode(graph, insightNode("starbucks", "menu-translation", "Menu translation", "Starbucks translates plain-language comfort drink requests into concrete menu items and modifiers."));
+  upsertNode(graph, customerNode(costcoHouseholdCustomer));
+  upsertNode(graph, customerNode(costcoOfficeCustomer));
+  upsertNode(graph, customerNode(starbucksCustomer));
+  upsertNode(graph, preferenceNode("costco", "organic-produce", "Organic produce", "Aarya leans organic when there is a clear option."));
+  upsertNode(graph, preferenceNode("costco", "nut-free-team-snacks", "Nut-free team snacks", "Maya avoids peanuts for shared office orders."));
+  upsertNode(graph, preferenceNode("starbucks", "hindi-hinglish-support", "Hindi/Hinglish support", "Aayushya prefers ordering support in Hindi/Hinglish."));
+  upsertNode(graph, preferenceNode("starbucks", "extra-spice", "Extra spice", "Aayushya likes chai drinks pushed closer to masala chai."));
+
+  upsertNode(graph, catalogNode("costco", "Rotisserie chicken", "Previous Costco game-night anchor item."));
+  upsertNode(graph, catalogNode("costco", "Spinach artichoke dip tray", "Vegetarian appetizer suggestion for a 15-person Costco hosting run."));
+  upsertNode(graph, catalogNode("costco", "Four pound berries", "Fruit-side recommendation for crowd hosting."));
+  upsertNode(graph, catalogNode("costco", "Cauliflower pizza two pack", "Vegetarian frozen main for Costco group hosting."));
+  upsertNode(graph, catalogNode("starbucks", "Grande Chai Latte", "Closest standard Starbucks drink to a sweet hot chai request."));
+  upsertNode(graph, catalogNode("starbucks", "Extra spice customization", "Modifier used to translate a home-style chai preference."));
+
+  upsertLink(graph, graphLink("costco", companyNodeId("costco"), insightNodeId("costco", "party-size-assortments"), "related_to", "Business-side assortment context."));
+  upsertLink(graph, graphLink("starbucks", companyNodeId("starbucks"), insightNodeId("starbucks", "menu-translation"), "related_to", "Business-side translation context."));
+  upsertLink(graph, graphLink("costco", customerNodeId(costcoHouseholdCustomer.id), preferenceNodeId("costco", "organic-produce"), "prefers", "Customer leans organic."));
+  upsertLink(graph, graphLink("costco", customerNodeId(costcoOfficeCustomer.id), preferenceNodeId("costco", "nut-free-team-snacks"), "avoids", "Office ordering avoids nuts."));
+  upsertLink(graph, graphLink("starbucks", customerNodeId(starbucksCustomer.id), preferenceNodeId("starbucks", "hindi-hinglish-support"), "prefers", "Customer prefers Hindi/Hinglish comfort."));
+  upsertLink(graph, graphLink("starbucks", customerNodeId(starbucksCustomer.id), preferenceNodeId("starbucks", "extra-spice"), "prefers", "Customer already likes extra spice."));
+  upsertLink(graph, graphLink("costco", customerNodeId(costcoHouseholdCustomer.id), catalogNodeId("costco", "Rotisserie chicken"), "orders", "Previously bought for game night."));
+
+  for (const companyItem of [
+    ["costco", "Rotisserie chicken"],
+    ["costco", "Spinach artichoke dip tray"],
+    ["costco", "Four pound berries"],
+    ["costco", "Cauliflower pizza two pack"],
+    ["starbucks", "Grande Chai Latte"],
+    ["starbucks", "Extra spice customization"]
+  ] as Array<[CompanyId, string]>) {
+    upsertLink(graph, graphLink(companyItem[0], companyNodeId(companyItem[0]), catalogNodeId(companyItem[0], companyItem[1]), "related_to", `${companyItem[1]} is connected to the business graph.`));
+  }
+
+  for (const call of calls) {
+    ensureCallNode(graph, call);
+  }
+  seedCallGraph(graph, calls.find((call) => call.id === "call_live_costco"));
+  seedCallGraph(graph, calls.find((call) => call.id === "call_live_starbucks"));
+
+  return graph;
+}
+
+function graphSnapshot(graph: GraphState) {
+  return {
+    nodes: graph.nodes,
+    links: graph.links,
+    previewNodeIds: graph.nodes.filter((node) => Boolean(node.previewForCallId)).map((node) => node.id),
+    previewLinkIds: graph.links.filter((link) => Boolean(link.previewForCallId)).map((link) => link.id),
+    focusCallId: graph.focusCallId,
+    lastMutationAt: graph.lastMutationAt
+  };
+}
+
+function previewGraphForCall(state: State, input: {
+  call: ActiveCall;
+  companyId: CompanyId;
+  customer: CustomerProfile;
+  request: string;
+  language: "en" | "hi";
+  result: CatalogSearchResponse;
+  flow?: CallFlow;
+}) {
+  ensureCallNode(state.graph, input.call);
+  clearGraphPreview(state.graph, input.companyId);
+  setGraphNodeActive(state.graph, companyNodeId(input.companyId), true);
+  setGraphNodeActive(state.graph, customerNodeId(input.customer.id), true);
+  setGraphNodeActive(state.graph, callNodeId(input.call.id), true);
+
+  upsertLink(state.graph, {
+    id: linkId(callNodeId(input.call.id), customerNodeId(input.customer.id), "related_to"),
+    source: callNodeId(input.call.id),
+    target: customerNodeId(input.customer.id),
+    kind: "related_to",
+    companyId: input.companyId,
+    detail: `${input.customer.name} is the customer on this call.`,
+    active: true
+  });
+
+  for (const fact of inferMemoryFacts(input.companyId, input.request, input.flow)) {
+    upsertNode(state.graph, {
+      ...preferenceNode(input.companyId, fact.key, fact.label, fact.detail),
+      previewForCallId: input.call.id,
+      active: true
+    });
+    upsertLink(state.graph, {
+      id: linkId(customerNodeId(input.customer.id), preferenceNodeId(input.companyId, fact.key), fact.linkKind),
+      source: customerNodeId(input.customer.id),
+      target: preferenceNodeId(input.companyId, fact.key),
+      kind: fact.linkKind,
+      companyId: input.companyId,
+      detail: fact.detail,
+      previewForCallId: input.call.id,
+      active: true
+    });
+    upsertLink(state.graph, {
+      id: linkId(callNodeId(input.call.id), preferenceNodeId(input.companyId, fact.key), "learned_from_call"),
+      source: callNodeId(input.call.id),
+      target: preferenceNodeId(input.companyId, fact.key),
+      kind: "learned_from_call",
+      companyId: input.companyId,
+      detail: `${fact.label} is a candidate memory from this call.`,
+      previewForCallId: input.call.id,
+      active: true
+    });
+  }
+
+  for (const match of input.result.results.slice(0, 3)) {
+    upsertNode(state.graph, {
+      ...catalogNode(input.companyId, match.name, match.description || match.category),
+      active: true
+    });
+    upsertLink(state.graph, {
+      id: linkId(callNodeId(input.call.id), catalogNodeId(input.companyId, match.name), input.language === "hi" && input.companyId === "starbucks" ? "translated_to" : "recommended"),
+      source: callNodeId(input.call.id),
+      target: catalogNodeId(input.companyId, match.name),
+      kind: input.language === "hi" && input.companyId === "starbucks" ? "translated_to" : "recommended",
+      companyId: input.companyId,
+      detail: input.language === "hi" && input.companyId === "starbucks"
+        ? `${match.name} is the translated Starbucks answer to the request.`
+        : `${match.name} is actively recommended for this call.`,
+      previewForCallId: input.call.id,
+      active: true
+    });
+  }
+
+  touchGraph(state.graph, input.call.id);
+}
+
+function commitGraphForCall(state: State, callId: string, input: {
+  companyId: CompanyId;
+  customer: CustomerProfile;
+  call?: ActiveCall | null;
+  order?: Order | null;
+}) {
+  const promotedNodeIds = state.graph.nodes
+    .filter((node) => node.previewForCallId === callId)
+    .map((node) => node.id);
+
+  for (const node of state.graph.nodes) {
+    if (node.previewForCallId === callId) node.previewForCallId = null;
+    node.active = promotedNodeIds.includes(node.id) || node.id === customerNodeId(input.customer.id) || node.id === callNodeId(callId);
+  }
+  for (const link of state.graph.links) {
+    if (link.previewForCallId === callId) link.previewForCallId = null;
+    link.active = promotedNodeIds.includes(link.source) || promotedNodeIds.includes(link.target) || link.source === callNodeId(callId) || link.target === callNodeId(callId);
+  }
+
+  if (input.order) {
+    for (const item of input.order.items) {
+      upsertNode(state.graph, {
+        ...catalogNode(input.companyId, item, "Confirmed order item from the completed call."),
+        active: true
+      });
+      upsertLink(state.graph, {
+        id: linkId(customerNodeId(input.customer.id), catalogNodeId(input.companyId, item), "orders"),
+        source: customerNodeId(input.customer.id),
+        target: catalogNodeId(input.companyId, item),
+        kind: "orders",
+        companyId: input.companyId,
+        detail: `${input.customer.name} ordered ${item}.`,
+        active: true
+      });
+    }
+  }
+
+  const callNode = state.graph.nodes.find((node) => node.id === callNodeId(callId));
+  if (callNode) callNode.active = false;
+  touchGraph(state.graph, callId);
+}
+
+function commitPreferenceToGraph(state: State, input: {
+  companyId: CompanyId;
+  customer: CustomerProfile;
+  preference: string;
+  confidence: number;
+  callId: string | null;
+}) {
+  const fact = preferenceFactForClaim(input.companyId, input.preference);
+  upsertNode(state.graph, {
+    ...preferenceNode(input.companyId, fact.key, fact.label, fact.detail),
+    active: true
+  });
+  upsertLink(state.graph, {
+    id: linkId(customerNodeId(input.customer.id), preferenceNodeId(input.companyId, fact.key), fact.linkKind),
+    source: customerNodeId(input.customer.id),
+    target: preferenceNodeId(input.companyId, fact.key),
+    kind: fact.linkKind,
+    companyId: input.companyId,
+    detail: `${fact.label} remembered at ${Math.round(input.confidence * 100)}% confidence.`,
+    active: true
+  });
+  if (input.callId) {
+    upsertLink(state.graph, {
+      id: linkId(callNodeId(input.callId), preferenceNodeId(input.companyId, fact.key), "learned_from_call"),
+      source: callNodeId(input.callId),
+      target: preferenceNodeId(input.companyId, fact.key),
+      kind: "learned_from_call",
+      companyId: input.companyId,
+      detail: `${fact.label} was committed from the call.`,
+      active: true
+    });
+  }
+  touchGraph(state.graph, input.callId);
+}
+
+function discardPreviewPreference(state: State, companyId: CompanyId, claim: string) {
+  const fact = preferenceFactForClaim(companyId, claim);
+  const id = preferenceNodeId(companyId, fact.key);
+  for (const node of state.graph.nodes) {
+    if (node.id === id && node.previewForCallId) {
+      node.previewForCallId = null;
+      node.active = false;
+    }
+  }
+  for (const link of state.graph.links) {
+    if ((link.source === id || link.target === id) && link.previewForCallId) {
+      link.previewForCallId = null;
+      link.active = false;
+    }
+  }
+  touchGraph(state.graph, state.graph.focusCallId);
+}
+
+function inferMemoryFacts(
+  companyId: CompanyId,
+  request: string,
+  flow?: CallFlow
+): Array<{ key: string; label: string; detail: string; linkKind: GraphLinkKind }> {
+  const normalized = `${request} ${flow?.request ?? ""}`.toLowerCase();
+  if (companyId === "starbucks") {
+    return [
+      {
+        key: "warm-drinks",
+        label: "Warm drinks",
+        detail: "The customer asked for a hot comfort drink rather than an iced option.",
+        linkKind: "prefers" as const
+      },
+      {
+        key: "chai",
+        label: "Chai",
+        detail: "The customer explicitly asked for chai and the agent translated that into a concrete Starbucks build.",
+        linkKind: "prefers" as const
+      },
+      {
+        key: "avoids-strong-coffee",
+        label: "Avoids strong coffee",
+        detail: "The request steered away from a strong coffee profile in favor of chai.",
+        linkKind: "avoids" as const
+      }
+    ];
+  }
+
+  const facts: Array<{ key: string; label: string; detail: string; linkKind: GraphLinkKind }> = [
+    {
+      key: "hosts-large-groups",
+      label: "Hosts large groups",
+      detail: "The customer is planning for a multi-person hosting occasion.",
+      linkKind: "hosts" as const
+    }
+  ];
+  if (normalized.includes("vegetarian")) {
+    facts.push({
+      key: "vegetarian-household",
+      label: "Vegetarian household",
+      detail: "The ordering context centered a mostly vegetarian group.",
+      linkKind: "shops_for" as const
+    });
+  }
+  if (normalized.includes("saturday") || normalized.includes("weekend")) {
+    facts.push({
+      key: "shops-weekends",
+      label: "Shops weekends",
+      detail: "The request explicitly referenced Saturday or weekend timing.",
+      linkKind: "related_to" as const
+    });
+  }
+  return facts;
+}
+
+function preferenceFactForClaim(companyId: CompanyId, claim: string) {
+  const normalized = normalizeMemoryClaim(claim).toLowerCase();
+  const seeded = inferMemoryFacts(companyId, normalized).find((fact) => normalized.includes(fact.key.replaceAll("-", " ")) || normalized.includes(fact.label.toLowerCase()));
+  if (seeded) return seeded;
+  return {
+    key: slugify(normalized || claim),
+    label: sentenceCase(normalized || claim),
+    detail: sentenceCase(claim),
+    linkKind: "prefers" as const
+  };
+}
+
+function companyNode(companyId: CompanyId): GraphNode {
+  return {
+    id: companyNodeId(companyId),
+    label: companyDefinitions[companyId].name,
+    type: "company",
+    companyId,
+    side: "business",
+    detail: companyDefinitions[companyId].catalogLabel,
+    markdown: [
+      `# ${companyDefinitions[companyId].name} Company Brain`,
+      "",
+      companyDefinitions[companyId].catalogLabel,
+      "",
+      "## Official Facts",
+      ...companyDefinitions[companyId].officialFacts.map((fact) => `- ${fact}`),
+      "",
+      "## Rules",
+      ...companyDefinitions[companyId].rules.map((rule) => `- ${rule}`)
+    ].join("\n")
+  };
+}
+
+function customerNode(customer: CustomerProfile): GraphNode {
+  return {
+    id: customerNodeId(customer.id),
+    label: customer.name,
+    type: "customer",
+    companyId: customer.companyId,
+    side: "customer",
+    detail: customer.style,
+    markdown: [
+      `# ${customer.name}`,
+      "",
+      `Company: ${companyDefinitions[customer.companyId].name}`,
+      `Language: ${customer.language}`,
+      `Style: ${customer.style}`,
+      "",
+      "## Likes",
+      ...customer.likes.map((like) => `- ${like}`),
+      "",
+      "## Avoids",
+      ...(customer.avoids.length ? customer.avoids.map((avoid) => `- ${avoid}`) : ["- none recorded"]),
+      "",
+      "## Last Order",
+      customer.lastOrder
+    ].join("\n")
+  };
+}
+
+function preferenceNode(companyId: CompanyId, key: string, label: string, detail: string): GraphNode {
+  return {
+    id: preferenceNodeId(companyId, key),
+    label,
+    type: "preference",
+    companyId,
+    side: "customer",
+    detail,
+    markdown: [
+      `# ${label}`,
+      "",
+      detail,
+      "",
+      `Company: ${companyDefinitions[companyId].name}`,
+      "Type: structured customer memory"
+    ].join("\n")
+  };
+}
+
+function catalogNode(companyId: CompanyId, label: string, detail: string): GraphNode {
+  return {
+    id: catalogNodeId(companyId, label),
+    label,
+    type: "catalog_item",
+    companyId,
+    side: "business",
+    detail,
+    markdown: [
+      `# ${label}`,
+      "",
+      detail,
+      "",
+      `Company: ${companyDefinitions[companyId].name}`,
+      "Type: catalog item or modifier"
+    ].join("\n")
+  };
+}
+
+function insightNode(companyId: CompanyId, key: string, label: string, detail: string): GraphNode {
+  return {
+    id: insightNodeId(companyId, key),
+    label,
+    type: "insight",
+    companyId,
+    side: "business",
+    detail,
+    markdown: [
+      `# ${label}`,
+      "",
+      detail,
+      "",
+      "Type: business-side insight"
+    ].join("\n")
+  };
+}
+
+function ensureCallNode(graph: GraphState, call: ActiveCall) {
+  upsertNode(graph, {
+    id: callNodeId(call.id),
+    label: call.customerName,
+    type: "call",
+    companyId: call.companyId,
+    side: "bridge",
+    detail: call.intent,
+    markdown: [
+      `# Call · ${call.customerName}`,
+      "",
+      `Company: ${companyDefinitions[call.companyId].name}`,
+      `Status: ${call.status}`,
+      `Intent: ${call.intent}`,
+      "",
+      "## Transcript",
+      ...call.transcript.map((line) => `- ${line}`)
+    ].join("\n"),
+    active: call.status !== "ended"
+  });
+  upsertLink(graph, graphLink(call.companyId, companyNodeId(call.companyId), callNodeId(call.id), "related_to", `${companyDefinitions[call.companyId].name} is handling this call.`));
+  const knownCustomerId = call.companyId === "costco"
+    ? call.customerName === costcoHouseholdCustomer.name
+      ? costcoHouseholdCustomer.id
+      : call.customerName === costcoOfficeCustomer.name
+        ? costcoOfficeCustomer.id
+        : null
+    : call.customerName === starbucksCustomer.name
+      ? starbucksCustomer.id
+      : null;
+  if (knownCustomerId) {
+    upsertLink(graph, graphLink(call.companyId, callNodeId(call.id), customerNodeId(knownCustomerId), "related_to", `${call.customerName} is tied to this call.`));
+  }
+}
+
+function seedCallGraph(graph: GraphState, call?: ActiveCall) {
+  if (!call) return;
+  if (call.companyId === "costco") {
+    for (const item of ["Spinach artichoke dip tray", "Four pound berries", "Cauliflower pizza two pack"]) {
+      upsertLink(graph, graphLink("costco", callNodeId(call.id), catalogNodeId("costco", item), "recommended", `${item} is part of the seeded Costco hosting recommendation.`));
+    }
+  }
+  if (call.companyId === "starbucks") {
+    upsertLink(graph, graphLink("starbucks", callNodeId(call.id), catalogNodeId("starbucks", "Grande Chai Latte"), "translated_to", "The agent translated the request into Grande Chai Latte."));
+    upsertLink(graph, graphLink("starbucks", callNodeId(call.id), catalogNodeId("starbucks", "Extra spice customization"), "recommended", "Extra spice is part of the seeded Starbucks translation flow."));
+  }
+}
+
+function clearGraphPreview(graph: GraphState, companyId: CompanyId) {
+  for (const node of graph.nodes) {
+    if (node.companyId !== companyId) continue;
+    node.active = false;
+    if (node.previewForCallId) node.previewForCallId = null;
+  }
+  for (const link of graph.links) {
+    if (link.companyId !== companyId) continue;
+    link.active = false;
+    if (link.previewForCallId) link.previewForCallId = null;
+  }
+}
+
+function setGraphNodeActive(graph: GraphState, nodeId: string, active: boolean) {
+  const node = graph.nodes.find((candidate) => candidate.id === nodeId);
+  if (node) node.active = active;
+}
+
+function upsertNode(graph: GraphState, node: GraphNode) {
+  const index = graph.nodes.findIndex((candidate) => candidate.id === node.id);
+  if (index >= 0) {
+    graph.nodes[index] = { ...graph.nodes[index], ...node };
+    return;
+  }
+  graph.nodes.push(node);
+}
+
+function upsertLink(graph: GraphState, link: GraphLink) {
+  const index = graph.links.findIndex((candidate) => candidate.id === link.id);
+  if (index >= 0) {
+    graph.links[index] = { ...graph.links[index], ...link };
+    return;
+  }
+  graph.links.push(link);
+}
+
+function touchGraph(graph: GraphState, callId: string | null) {
+  graph.focusCallId = callId;
+  graph.lastMutationAt = new Date().toISOString();
+}
+
+function graphLink(companyId: CompanyId, source: string, target: string, kind: GraphLinkKind, detail: string): GraphLink {
+  return {
+    id: linkId(source, target, kind),
+    source,
+    target,
+    kind,
+    companyId,
+    detail
+  };
+}
+
+function companyNodeId(companyId: CompanyId) {
+  return `graph_company_${companyId}`;
+}
+
+function customerNodeId(customerId: string) {
+  return `graph_customer_${customerId}`;
+}
+
+function preferenceNodeId(companyId: CompanyId, key: string) {
+  return `graph_pref_${companyId}_${slugify(key)}`;
+}
+
+function catalogNodeId(companyId: CompanyId, label: string) {
+  return `graph_catalog_${companyId}_${slugify(label)}`;
+}
+
+function insightNodeId(companyId: CompanyId, key: string) {
+  return `graph_insight_${companyId}_${slugify(key)}`;
+}
+
+function callNodeId(id: string) {
+  return `graph_call_${id}`;
+}
+
+function linkId(source: string, target: string, kind: GraphLinkKind) {
+  return `graph_link_${kind}_${slugify(source)}_${slugify(target)}`;
+}
+
+function customerByName(state: State, companyId: CompanyId, name: string) {
+  return Object.values(state.customers).find((customer) => customer.companyId === companyId && customer.name === name) ?? null;
+}
+
+function customerForGraph(state: State, companyId: CompanyId, name?: string, phone?: string) {
+  return (name ? customerByName(state, companyId, name) : null)
+    ?? (phone ? customerForPhone(state, companyId, phone) : null)
+    ?? primaryCustomer(state, companyId);
+}
+
+function isGraphState(value: unknown): value is GraphState {
+  return typeof value === "object" && value !== null && Array.isArray((value as GraphState).nodes) && Array.isArray((value as GraphState).links);
+}
+
+function migrateGraph(graph: GraphState, calls: ActiveCall[]) {
+  const fallback = initialGraphState(calls);
+  return {
+    ...fallback,
+    ...graph,
+    nodes: Array.isArray(graph.nodes) ? graph.nodes : fallback.nodes,
+    links: Array.isArray(graph.links) ? graph.links : fallback.links,
+    focusCallId: graph.focusCallId ?? fallback.focusCallId,
+    lastMutationAt: graph.lastMutationAt ?? fallback.lastMutationAt
+  };
+}
+
+function slugify(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "item";
+}
+
+function sentenceCase(value: string) {
+  return value ? value.charAt(0).toUpperCase() + value.slice(1) : "";
 }
