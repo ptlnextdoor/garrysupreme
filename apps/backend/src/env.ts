@@ -16,6 +16,7 @@ const envSchema = z.object({
   GBRAIN_API_KEY: z.string().optional().default(''),
   GBRAIN_BASE_URL: z.string().optional().default(''),
   GBRAIN_PROJECT_ID: z.string().optional().default(''),
+  GBRAIN_MODE: z.enum(['file', 'api', 'hybrid']).optional(),
 
   GSTACK_API_KEY: z.string().optional().default(''),
   GSTACK_BASE_URL: z.string().optional().default(''),
