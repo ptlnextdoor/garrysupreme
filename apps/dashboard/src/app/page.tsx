@@ -8,6 +8,7 @@ import CustomerPanel from '../components/CustomerPanel'
 import MemoryReview from '../components/MemoryReview'
 import InsightCards from '../components/InsightCards'
 import GBrainPanel from '../components/GBrainPanel'
+import IntelPanel from '../components/IntelPanel'
 
 export default function Dashboard() {
   const { activeCalls, recentOrders, pendingFacts, stats } = useSSE()
@@ -34,10 +35,11 @@ export default function Dashboard() {
       {/* Main 3-column grid */}
       <div className="grid grid-cols-3 gap-4 flex-1 min-h-0">
 
-        {/* Left col: Active Calls + Customer Profile */}
+        {/* Left col: Active Calls + Customer Profile + Intel */}
         <div className="flex flex-col gap-4">
           <ActiveCalls calls={activeCalls} />
           <CustomerPanel />
+          <IntelPanel />
         </div>
 
         {/* Center col: Order Feed */}
