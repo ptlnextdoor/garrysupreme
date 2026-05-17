@@ -9,6 +9,7 @@ import { DashboardTopbar } from "@/components/dashboard/topbar"
 import { calls } from "@/lib/mock/calls"
 import { customers } from "@/lib/mock/customers"
 import { insights } from "@/lib/mock/insights"
+import { fetchPulseDashboard, type PulseDashboard } from "@/lib/pulse-api"
 
 function useCountUp(end: number, duration = 1400) {
   const [count, setCount] = useState(0)
@@ -28,10 +29,19 @@ function useCountUp(end: number, duration = 1400) {
 }
 
 export default function DashboardOverviewPage() {
-  const todaysCalls = calls.length
-  const recoveredRevenue = 267
-  const topItem = "Lavender Latte"
-  const churnRiskCount = customers.filter((c) => c.churnRisk === "high").length
+  const [pulse, setPulse] = useState<PulseDashboard | null>(null)
+
+  useEffect(() => {
+    fetchPulseDashboard().then(setPulse).catch(() => setPulse(null))
+  }, [])
+
+  const todaysCalls = pulse?.metrics.activeCalls ?? calls.length
+  const recoveredRevenue = pulse?.metrics.recoveredRevenueToday ?? 267
+  const topItem = pulse?.company.sampleItems[0]?.name ?? "Lavender Latte"
+  const churnRiskCount = pulse?.memoryCandidates.filter((memory) => memory.status === "pending").length ?? customers.filter((c) => c.churnRisk === "high").length
+  const recentCalls = pulse?.activeCalls ?? calls
+  const heading = pulse ? `${pulse.company.name} catalog concierge` : "Today at Sarah's Bakery"
+  const subtitle = pulse ? `${pulse.company.catalogCount.toLocaleString()} rows · ${pulse.company.catalogLabel}` : "Today at Sarah's Bakery — Saturday, May 16, 2026"
 
   const cTodays = Math.round(useCountUp(todaysCalls))
   const cRevenue = Math.round(useCountUp(recoveredRevenue))
@@ -39,8 +49,15 @@ export default function DashboardOverviewPage() {
 
   return (
     <>
-      <DashboardTopbar title="Overview" subtitle="Today at Sarah's Bakery — Saturday, May 16, 2026" />
+      <DashboardTopbar title="Overview" subtitle={subtitle} />
       <div className="p-6 lg:px-12 lg:py-10 space-y-8 w-full">
+        <div className="rounded-2xl border border-border bg-card/70 px-5 py-4">
+          <div className="text-sm uppercase tracking-wider text-muted-foreground">Live source</div>
+          <div className="mt-1 text-2xl font-medium">{heading}</div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {pulse ? "Connected to Railway API via NEXT_PUBLIC_API_URL." : "Using mock fallback until Railway API is configured."}
+          </p>
+        </div>
         {/* Stat cards — way bigger numbers + roomier cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
           <Card className="p-3">
@@ -108,23 +125,23 @@ export default function DashboardOverviewPage() {
             </CardHeader>
             <CardContent>
               <div className="divide-y divide-border">
-                {calls.map((c) => (
+                {recentCalls.map((c) => (
                   <div key={c.id} className="py-4 flex items-center gap-4">
                     <div className="w-11 h-11 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-medium shrink-0">
-                      {c.customerNameSnapshot
+                      {("customerNameSnapshot" in c ? c.customerNameSnapshot : c.customerName)
                         .split(" ")
                         .map((w) => w[0])
                         .join("")
                         .slice(0, 2)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-base font-medium truncate">{c.customerNameSnapshot}</div>
-                      <div className="text-sm text-muted-foreground truncate">{c.outcome}</div>
+                      <div className="text-base font-medium truncate">{"customerNameSnapshot" in c ? c.customerNameSnapshot : c.customerName}</div>
+                      <div className="text-sm text-muted-foreground truncate">{"outcome" in c ? c.outcome : c.intent}</div>
                     </div>
                     <Badge
                       variant="secondary"
                       className={
-                        c.status === "active"
+                        (c.status === "active" || c.status === "ringing" || c.status === "context loaded" || c.status === "ordering")
                           ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/10"
                           : c.status === "escalated"
                             ? "bg-amber-500/10 text-amber-300 border border-amber-500/20 hover:bg-amber-500/10"

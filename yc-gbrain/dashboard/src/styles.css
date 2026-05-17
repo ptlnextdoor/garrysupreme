@@ -159,6 +159,7 @@ nav a.selected {
 }
 
 .topbar,
+.company-switcher,
 .metric-row,
 .dashboard-grid {
   min-width: 0;
@@ -240,6 +241,45 @@ h2 {
   gap: 14px;
 }
 
+.company-switcher {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.company-tab {
+  display: grid;
+  gap: 4px;
+  padding: 16px 18px;
+  text-align: left;
+  color: var(--espresso);
+  background: rgba(255, 248, 234, 0.58);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  cursor: pointer;
+}
+
+.company-tab strong {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 24px;
+}
+
+.company-tab span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.selected-company-tab {
+  color: #fff8ea;
+  background: linear-gradient(135deg, var(--espresso), var(--coffee));
+  border-color: rgba(255, 248, 234, 0.28);
+}
+
+.selected-company-tab span {
+  color: rgba(255, 248, 234, 0.72);
+}
+
 .metric-card,
 .panel {
   background: rgba(255, 248, 234, 0.74);
@@ -257,6 +297,7 @@ h2 {
 .panel-heading span,
 .order-box span,
 .tag-group > span,
+.household-memory > span,
 .last-order span,
 .memory-card p,
 .menu-grid small {
@@ -284,8 +325,9 @@ h2 {
   grid-template-columns: 1fr 1.35fr 0.95fr;
   grid-template-areas:
     "calls detail customer"
-    "memory company customer"
-    "memory company events";
+    "queries workflow customer"
+    "matches workflow memory"
+    "company company events";
   gap: 16px;
   padding-bottom: 28px;
 }
@@ -321,6 +363,18 @@ h2 {
 
 .memory-panel {
   grid-area: memory;
+}
+
+.query-panel {
+  grid-area: queries;
+}
+
+.workflow-panel {
+  grid-area: workflow;
+}
+
+.match-panel {
+  grid-area: matches;
 }
 
 .company-panel {
@@ -503,6 +557,38 @@ h2 {
   background: #f3d6c6;
 }
 
+.household-memory {
+  margin-top: 18px;
+}
+
+.household-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.household-grid article {
+  padding: 12px;
+  background:
+    linear-gradient(135deg, rgba(221, 141, 40, 0.13), transparent 68%),
+    rgba(255, 255, 255, 0.46);
+  border: 1px solid rgba(95, 59, 31, 0.08);
+  border-radius: 18px;
+}
+
+.household-grid strong {
+  display: block;
+  color: var(--espresso);
+  font-size: 13px;
+}
+
+.household-grid p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
 .last-order {
   margin-top: 18px;
   padding: 14px;
@@ -514,6 +600,115 @@ h2 {
   display: grid;
   align-content: start;
   gap: 12px;
+}
+
+.query-list,
+.match-list,
+.workflow-rail {
+  display: grid;
+  gap: 10px;
+}
+
+.query-card,
+.match-card,
+.workflow-node {
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.44);
+  border: 1px solid rgba(95, 59, 31, 0.08);
+  border-radius: 20px;
+}
+
+.query-card span,
+.match-card span,
+.workflow-node span,
+.review-note,
+.empty-copy,
+.brain-facts p,
+.match-card small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.query-card p,
+.workflow-node p,
+.match-card p,
+.brain-facts p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.query-card div,
+.match-card div {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.query-card div {
+  margin-top: 10px;
+}
+
+.query-card button {
+  min-height: 34px;
+  padding: 0 10px;
+  color: #fff9ef;
+  background: var(--espresso);
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.workflow-node {
+  position: relative;
+  overflow: hidden;
+}
+
+.workflow-node::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  content: "";
+  background: #d8c5a7;
+}
+
+.workflow-node.active::before {
+  background: var(--saffron);
+}
+
+.workflow-node.done::before {
+  background: var(--sage);
+}
+
+.workflow-node.review::before {
+  background: var(--danger);
+}
+
+.workflow-node strong,
+.match-card strong {
+  display: block;
+  font-size: 14px;
+}
+
+.match-card small {
+  display: block;
+  margin-top: 7px;
+}
+
+.review-note,
+.empty-copy {
+  margin: 0 0 12px;
+}
+
+.brain-facts {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
 }
 
 .memory-card {
@@ -631,13 +826,17 @@ h2 {
     grid-template-areas:
       "calls"
       "detail"
+      "queries"
+      "workflow"
+      "matches"
       "customer"
       "memory"
       "company"
       "events";
   }
 
-  .menu-grid {
+  .menu-grid,
+  .company-switcher {
     grid-template-columns: 1fr;
   }
 }

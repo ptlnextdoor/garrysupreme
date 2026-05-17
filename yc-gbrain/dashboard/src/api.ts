@@ -1,4 +1,4 @@
-import type { DashboardData } from "./types";
+import type { CompanyId, DashboardData } from "./types";
 
 function demoHeaders(): Record<string, string> {
   const params = new URLSearchParams(window.location.search);
@@ -13,33 +13,66 @@ export async function fetchDashboard(): Promise<DashboardData> {
   return response.json() as Promise<DashboardData>;
 }
 
-export async function demoGetContext() {
+export async function demoGetContext(companyId: CompanyId, request?: string) {
   const response = await fetch("/api/context", {
     method: "POST",
     headers: { "Content-Type": "application/json", ...demoHeaders() },
     body: JSON.stringify({
-      phone_number: "+15551234567",
-      request: "I want something cold, sweet, not too heavy, no dairy."
+      company_id: companyId,
+      phone_number: companyId === "costco" ? "+17028619093" : "+15557654321",
+      request: request ?? (companyId === "costco"
+        ? "I am doing a quick Costco run that may turn into the big monthly haul. Add my usual almond milk, salmon, and kids snacks."
+        : "I want something cold, not too sweet, with caffeine, but no dairy.")
     })
   });
   if (!response.ok) throw new Error("Failed to get context");
   return response.json();
 }
 
-export async function demoSaveOrder() {
-  const response = await fetch("/api/save_order", {
+export async function demoSearch(companyId: CompanyId, query: string, customerId?: string) {
+  const response = await fetch("/api/search", {
     method: "POST",
     headers: { "Content-Type": "application/json", ...demoHeaders() },
     body: JSON.stringify({
-      customer_name: "Aayushya",
-      phone_number: "+15551234567",
+      company_id: companyId,
+      query,
+      customer_id: customerId
+    })
+  });
+  if (!response.ok) throw new Error("Failed to search catalog");
+  return response.json();
+}
+
+export async function demoSaveOrder(companyId: CompanyId) {
+  const response = await fetch("/api/save_order", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...demoHeaders() },
+    body: JSON.stringify(companyId === "costco" ? {
+      company_id: "costco",
+      customer_name: "Aarya",
+      phone_number: "+17028619093",
       items: [
-        "Iced Chai Latte, oat milk, cardamom",
-        "Hot Chai Latte, extra sweet, cardamom"
+        "Kirkland almond milk",
+        "Salmon fillets",
+        "Goldfish variety pack for the kids",
+        "Kirkland bath tissue"
       ],
       new_preferences: [
-        "Customer likes cold chai variants.",
-        "Mom likes hot sweet chai with cardamom."
+        "Customer often asks whether this is a quick Costco run or the big monthly household haul.",
+        "Customer wants Mom, partner, and kids preferences remembered separately."
+      ],
+      confidence: 0.9
+    } : {
+      company_id: "starbucks",
+      customer_name: "Aayushya",
+      phone_number: "+15557654321",
+      items: [
+        "Grande iced coffee, oat milk, light syrup",
+        "Emma's Grande Strawberry Acai Lemonade, light ice"
+      ],
+      new_preferences: [
+        "Customer prefers plain-English Starbucks translations.",
+        "Customer prefers oat milk and half-sweet drinks."
       ],
       confidence: 0.86
     })
@@ -68,20 +101,32 @@ export async function rejectMemory(id: string) {
   return response.json();
 }
 
-export async function startDemoCall() {
-  const response = await fetch("/api/demo/start_call", { method: "POST", headers: demoHeaders() });
+export async function startDemoCall(companyId: CompanyId) {
+  const response = await fetch("/api/demo/start_call", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...demoHeaders() },
+    body: JSON.stringify({ company_id: companyId })
+  });
   if (!response.ok) throw new Error("Failed to start demo call");
   return response.json();
 }
 
-export async function endDemoCall() {
-  const response = await fetch("/api/demo/end_call", { method: "POST", headers: demoHeaders() });
+export async function endDemoCall(companyId: CompanyId) {
+  const response = await fetch("/api/demo/end_call", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...demoHeaders() },
+    body: JSON.stringify({ company_id: companyId })
+  });
   if (!response.ok) throw new Error("Failed to end demo call");
   return response.json();
 }
 
-export async function resetDemo() {
-  const response = await fetch("/api/demo/reset", { method: "POST", headers: demoHeaders() });
+export async function resetDemo(companyId: CompanyId) {
+  const response = await fetch("/api/demo/reset", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...demoHeaders() },
+    body: JSON.stringify({ company_id: companyId })
+  });
   if (!response.ok) throw new Error("Failed to reset demo");
   return response.json();
 }

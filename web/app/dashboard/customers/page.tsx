@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
@@ -9,6 +9,7 @@ import { DashboardTopbar } from "@/components/dashboard/topbar"
 import { customers } from "@/lib/mock/customers"
 import { getMenuItem } from "@/lib/mock/menu"
 import type { Customer } from "@/lib/mock/types"
+import { fetchPulseDashboard, type PulseCustomer } from "@/lib/pulse-api"
 
 const churnColor = {
   low: "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/10",
@@ -16,12 +17,55 @@ const churnColor = {
   high: "bg-rose-500/10 text-rose-300 border border-rose-500/20 hover:bg-rose-500/10",
 }
 
+function customerLanguage(customer: Customer | PulseCustomer) {
+  return customer.language
+}
+
+function customerOrders(customer: Customer | PulseCustomer) {
+  return "totalOrders" in customer ? customer.totalOrders : customer.recurringItems.length
+}
+
+function customerAvgTicket(customer: Customer | PulseCustomer) {
+  return "avgTicket" in customer ? customer.avgTicket : customer.companyId === "costco" ? 145 : 9
+}
+
+function customerRisk(customer: Customer | PulseCustomer): Customer["churnRisk"] {
+  if ("churnRisk" in customer) return customer.churnRisk
+  return customer.confidence < 0.75 ? "medium" : "low"
+}
+
+function customerPreferences(customer: Customer | PulseCustomer) {
+  return "preferences" in customer ? customer.preferences : customer.likes
+}
+
+function customerAllergies(customer: Customer | PulseCustomer) {
+  return "allergies" in customer ? customer.allergies : customer.avoids
+}
+
+function customerFavoriteItemIds(customer: Customer | PulseCustomer) {
+  return "favoriteItemIds" in customer ? customer.favoriteItemIds : []
+}
+
+function customerNotes(customer: Customer | PulseCustomer) {
+  if ("notes" in customer) return customer.notes
+  const household = customer.household.map((member) => `${member.name}: ${member.notes.join(", ")}`).join(" · ")
+  return [customer.style, customer.lastOrder, household].filter(Boolean).join(" · ")
+}
+
 export default function CustomersPage() {
-  const [selected, setSelected] = useState<Customer | null>(null)
+  const [liveCustomers, setLiveCustomers] = useState<PulseCustomer[] | null>(null)
+  const [selected, setSelected] = useState<Customer | PulseCustomer | null>(null)
+  const rows = liveCustomers ?? customers
+
+  useEffect(() => {
+    fetchPulseDashboard().then((dashboard) => {
+      if (dashboard?.customers.length) setLiveCustomers(dashboard.customers)
+    }).catch(() => undefined)
+  }, [])
 
   return (
     <>
-      <DashboardTopbar title="Customers" subtitle="Every caller, every preference, perfectly remembered." />
+      <DashboardTopbar title="Customers" subtitle={liveCustomers ? "Live customer brains from Railway." : "Every caller, every preference, perfectly remembered."} />
       <div className="p-6 lg:px-12 lg:py-10 w-full">
         <Card className="p-2">
           <CardContent className="p-0">
@@ -36,7 +80,7 @@ export default function CustomersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {customers.map((c) => (
+                {rows.map((c) => (
                   <TableRow key={c.id} className="cursor-pointer" onClick={() => setSelected(c)}>
                     <TableCell className="py-5">
                       <div className="flex items-center gap-4">
@@ -53,17 +97,17 @@ export default function CustomersPage() {
                       </div>
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-base text-muted-foreground py-5">
-                      {c.language}
+                      {customerLanguage(c)}
                     </TableCell>
                     <TableCell className="hidden sm:table-cell text-right text-base py-5">
-                      {c.totalOrders}
+                      {customerOrders(c)}
                     </TableCell>
                     <TableCell className="hidden sm:table-cell text-right text-base py-5">
-                      ${c.avgTicket.toFixed(2)}
+                      ${customerAvgTicket(c).toFixed(2)}
                     </TableCell>
                     <TableCell className="py-5">
-                      <Badge variant="secondary" className={`${churnColor[c.churnRisk]} text-sm py-1 px-2.5`}>
-                        {c.churnRisk}
+                      <Badge variant="secondary" className={`${churnColor[customerRisk(c)]} text-sm py-1 px-2.5`}>
+                        {customerRisk(c)}
                       </Badge>
                     </TableCell>
                   </TableRow>
@@ -89,7 +133,7 @@ export default function CustomersPage() {
                   <div>
                     <SheetTitle className="text-base font-medium">{selected.name}</SheetTitle>
                     <SheetDescription className="text-xs">
-                      {selected.phone} · {selected.language}
+                      {selected.phone} · {customerLanguage(selected)}
                     </SheetDescription>
                   </div>
                 </div>
@@ -99,16 +143,16 @@ export default function CustomersPage() {
                 <div className="grid grid-cols-3 gap-3 text-center">
                   <div className="rounded-lg border border-border p-3">
                     <div className="text-xs text-muted-foreground">Orders</div>
-                    <div className="text-lg font-medium">{selected.totalOrders}</div>
+                    <div className="text-lg font-medium">{customerOrders(selected)}</div>
                   </div>
                   <div className="rounded-lg border border-border p-3">
                     <div className="text-xs text-muted-foreground">Avg ticket</div>
-                    <div className="text-lg font-medium">${selected.avgTicket.toFixed(2)}</div>
+                    <div className="text-lg font-medium">${customerAvgTicket(selected).toFixed(2)}</div>
                   </div>
                   <div className="rounded-lg border border-border p-3">
                     <div className="text-xs text-muted-foreground">Risk</div>
-                    <Badge variant="secondary" className={`mt-0.5 ${churnColor[selected.churnRisk]}`}>
-                      {selected.churnRisk}
+                    <Badge variant="secondary" className={`mt-0.5 ${churnColor[customerRisk(selected)]}`}>
+                      {customerRisk(selected)}
                     </Badge>
                   </div>
                 </div>
@@ -116,7 +160,7 @@ export default function CustomersPage() {
                 <div>
                   <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Preferences</div>
                   <div className="flex flex-wrap gap-1.5">
-                    {selected.preferences.map((p) => (
+                    {customerPreferences(selected).map((p) => (
                       <Badge key={p} variant="secondary" className="font-normal">
                         {p}
                       </Badge>
@@ -126,9 +170,9 @@ export default function CustomersPage() {
 
                 <div>
                   <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Allergies / restrictions</div>
-                  {selected.allergies.length ? (
+                  {customerAllergies(selected).length ? (
                     <div className="flex flex-wrap gap-1.5">
-                      {selected.allergies.map((a) => (
+                      {customerAllergies(selected).map((a) => (
                         <Badge key={a} variant="secondary" className="bg-rose-500/10 text-rose-300 border border-rose-500/20 hover:bg-rose-500/10 font-normal">
                           {a}
                         </Badge>
@@ -142,7 +186,7 @@ export default function CustomersPage() {
                 <div>
                   <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Favorite items</div>
                   <div className="space-y-1">
-                    {selected.favoriteItemIds.map((id) => {
+                    {customerFavoriteItemIds(selected).map((id) => {
                       const item = getMenuItem(id)
                       if (!item) return null
                       return (
@@ -157,7 +201,7 @@ export default function CustomersPage() {
 
                 <div>
                   <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Notes</div>
-                  <p className="text-sm leading-relaxed text-foreground/80">{selected.notes}</p>
+                  <p className="text-sm leading-relaxed text-foreground/80">{customerNotes(selected)}</p>
                 </div>
               </div>
             </>

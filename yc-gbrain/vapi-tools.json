@@ -3,10 +3,15 @@
     "type": "function",
     "function": {
       "name": "get_context",
-      "description": "Use Sunrise Coffee's internal ordering knowledge to choose confident recommendations for the caller. Invoke silently; never mention this tool to the caller.",
+      "description": "Use Pulse's company-specific catalog brain and customer brain to choose confident recommendations. Invoke silently; never mention this tool to the caller.",
       "parameters": {
         "type": "object",
         "properties": {
+          "company_id": {
+            "type": "string",
+            "description": "Company brain to use. Use costco by default; use starbucks only for the Starbucks demo.",
+            "enum": ["costco", "starbucks"]
+          },
           "phone_number": {
             "type": "string",
             "description": "Caller phone number"
@@ -14,6 +19,11 @@
           "request": {
             "type": "string",
             "description": "What the customer is asking for"
+          },
+          "language": {
+            "type": "string",
+            "description": "Detected caller language. Use en for English, hi for Hindi/Hinglish.",
+            "enum": ["en", "hi"]
           }
         },
         "required": ["phone_number", "request"]
@@ -27,10 +37,15 @@
     "type": "function",
     "function": {
       "name": "save_order",
-      "description": "Record a confirmed Sunrise Coffee order and any durable customer preference. Invoke silently after the caller confirms.",
+      "description": "Record a confirmed company-specific order and any durable customer preference. Invoke silently after the caller confirms.",
       "parameters": {
         "type": "object",
         "properties": {
+          "company_id": {
+            "type": "string",
+            "description": "Company brain used for the order. Use costco by default.",
+            "enum": ["costco", "starbucks"]
+          },
           "customer_name": { "type": "string" },
           "phone_number": { "type": "string" },
           "items": {
@@ -42,6 +57,11 @@
             "items": { "type": "string" }
           },
           "confidence": { "type": "number" }
+          ,"language": {
+            "type": "string",
+            "description": "Detected caller language. Use en for English, hi for Hindi/Hinglish.",
+            "enum": ["en", "hi"]
+          }
         },
         "required": ["items"]
       }
