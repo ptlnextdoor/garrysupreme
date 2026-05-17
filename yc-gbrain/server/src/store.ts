@@ -12,6 +12,8 @@ import {
   type CatalogSearchResponse,
   type CompanyId
 } from "./catalog.js";
+import { loadConvexState, saveConvexState } from "./convex-state.js";
+import { syncSponsorEvent } from "./sponsor-sync.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "../..");
@@ -76,7 +78,7 @@ export type WorkflowEvent = {
   created_at: string;
 };
 
-type State = {
+export type State = {
   selectedCompanyId: CompanyId;
   activeCalls: ActiveCall[];
   customers: Record<string, CustomerProfile>;
@@ -305,6 +307,9 @@ async function ensureDirs() {
 export async function loadState(): Promise<State> {
   await ensureDirs();
 
+  const convexState = await loadConvexState();
+  if (convexState) return migrateState(convexState);
+
   try {
     const raw = await readFile(statePath, "utf8");
     return migrateState(JSON.parse(raw) as Partial<State>);
@@ -324,6 +329,7 @@ export async function loadState(): Promise<State> {
 async function saveState(state: State) {
   await ensureDirs();
   await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`);
+  await saveConvexState(state);
 }
 
 function isNotFound(error: unknown) {
@@ -508,6 +514,12 @@ export async function saveOrder(input: {
     ...(order.new_preferences.length ? order.new_preferences.map((pref) => `- ${pref}`) : ["- none"])
   ].join("\n");
   await writeFile(path.join(gbrainDir, "orders", `${order.id}.md`), `${md}\n`);
+  void syncSponsorEvent({
+    type: "order_saved",
+    companyId: order.company_id,
+    payload: order,
+    createdAt: order.created_at
+  });
 
   return order;
 }
@@ -523,6 +535,11 @@ export async function approveMemory(id: string) {
     if (!customer.likes.includes(normalized)) customer.likes.push(normalized);
     customer.confidence = Math.min(0.99, customer.confidence + 0.01);
     pushWorkflow(state, "Order/Memory Write", "done", "Memory approved", memory.claim);
+    void syncSponsorEvent({
+      type: "memory_approved",
+      companyId: memory.companyId,
+      payload: memory
+    });
     return memory;
   });
 }
@@ -605,6 +622,11 @@ export async function recordVapiLifecycle(input: {
       call.transcript.push(`Vapi: ${input.event}`);
       pushWorkflow(state, "Call", "done", "Vapi call ended", call.customerName);
     }
+    void syncSponsorEvent({
+      type: "vapi_lifecycle",
+      companyId,
+      payload: { event: input.event, call }
+    });
     return call;
   });
 }
@@ -721,7 +743,9 @@ function primaryCustomer(state: State, companyId: CompanyId) {
 
 function customerForPhone(state: State, companyId: CompanyId, phoneNumber: string) {
   const demoMatch = process.env.DEMO_PHONE_MATCH ?? "YOUR_NUMBER";
+  const demoPhone = process.env.DEMO_PHONE;
   const normalized = phoneNumber || "unknown";
+  if (demoPhone && normalized.replace(/\D/g, "") === demoPhone.replace(/\D/g, "")) return primaryCustomer(state, companyId);
   if (normalized.includes(demoMatch) || normalized.includes("1234567")) return primaryCustomer(state, companyId);
   return Object.values(state.customers).find((customer) => customer.companyId === companyId && customer.phone === normalized) ?? state.customers["new-customer"];
 }

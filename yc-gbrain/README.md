@@ -19,9 +19,10 @@ npm run dev
 
 Pulse ingests local catalog/research files into file-backed GBrain-shaped storage:
 
-- Costco source: `/Users/aayu/CostcoProductCatalog/catalog_with_sources.csv`
-- Starbucks source: `/Users/aayu/starbucks_full_product_menu_catalog.csv`
-- Research seeds: `/Users/aayu/pulse_demo_research/*.csv`
+- Production Costco source: `server/data/costco_catalog.csv`
+- Production Starbucks source: `server/data/starbucks_catalog.csv`
+- Production research seeds: `server/data/*_taxonomy.csv` and `server/data/demo_queries.csv`
+- Local development can override those paths with `COSTCO_CATALOG_PATH`, `STARBUCKS_CATALOG_PATH`, `COSTCO_TAXONOMY_PATH`, `STARBUCKS_TAXONOMY_PATH`, and `DEMO_QUERIES_PATH`.
 
 Generated brains:
 

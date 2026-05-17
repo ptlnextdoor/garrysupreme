@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 export type CompanyId = "costco" | "starbucks";
 
@@ -104,12 +105,15 @@ type CatalogBundle = {
   demoQueries: DemoQuery[];
 };
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const dataDir = path.resolve(__dirname, "../data");
+
 const external = {
-  costcoCatalog: "/Users/aayu/CostcoProductCatalog/catalog_with_sources.csv",
-  starbucksCatalog: "/Users/aayu/starbucks_full_product_menu_catalog.csv",
-  costcoTaxonomy: "/Users/aayu/pulse_demo_research/costco_seed_taxonomy.csv",
-  starbucksTaxonomy: "/Users/aayu/pulse_demo_research/starbucks_seed_taxonomy.csv",
-  demoQueries: "/Users/aayu/pulse_demo_research/demo_queries.csv"
+  costcoCatalog: process.env.COSTCO_CATALOG_PATH ?? path.join(dataDir, "costco_catalog.csv"),
+  starbucksCatalog: process.env.STARBUCKS_CATALOG_PATH ?? path.join(dataDir, "starbucks_catalog.csv"),
+  costcoTaxonomy: process.env.COSTCO_TAXONOMY_PATH ?? path.join(dataDir, "costco_seed_taxonomy.csv"),
+  starbucksTaxonomy: process.env.STARBUCKS_TAXONOMY_PATH ?? path.join(dataDir, "starbucks_seed_taxonomy.csv"),
+  demoQueries: process.env.DEMO_QUERIES_PATH ?? path.join(dataDir, "demo_queries.csv")
 };
 
 export const companyDefinitions: Record<CompanyId, CompanyDefinition> = {

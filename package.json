@@ -4,10 +4,13 @@
   "scripts": {
     "dev": "concurrently -n api,dashboard -c green,yellow \"npm --workspace @pulse/server run dev\" \"npm --workspace @pulse/dashboard run dev\"",
     "build": "npm --workspace @pulse/server run build && npm --workspace @pulse/dashboard run build",
-    "typecheck": "npm --workspace @pulse/server run typecheck && npm --workspace @pulse/dashboard run typecheck"
+    "typecheck": "npm --workspace @pulse/server run typecheck && npm --workspace @pulse/dashboard run typecheck",
+    "convex:dev": "convex dev",
+    "convex:deploy": "convex deploy"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
+    "convex": "^1.39.1",
     "next": "16.0.10"
   },
   "workspaces": [

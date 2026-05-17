@@ -15,9 +15,13 @@ const app = Fastify({
 });
 
 const clients = new Set<{ send: (payload: string) => void }>();
+const allowedOrigins = [
+  ...(process.env.DASHBOARD_ORIGIN ?? process.env.FRONTEND_URL ?? "").split(","),
+  process.env.FRONTEND_URL ?? ""
+].map((origin) => origin.trim()).filter(Boolean);
 
 await app.register(cors, {
-  origin: process.env.DASHBOARD_ORIGIN ?? true
+  origin: allowedOrigins.length ? allowedOrigins : true
 });
 await app.register(websocket);
 
