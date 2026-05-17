@@ -10,6 +10,7 @@ import reviewRoute from './routes/review.js'
 import vapiWebhookRoute from './routes/vapi-webhook.js'
 import queriesRoute from './routes/queries.js'
 import collectRawRoute from './routes/collect-raw.js'
+import gbrainStatsRoute from './routes/gbrain-stats.js'
 
 // Point GBrainClient to repo-root data/ regardless of cwd
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../')
@@ -29,6 +30,7 @@ await app.register(reviewRoute)
 await app.register(vapiWebhookRoute)
 await app.register(queriesRoute)
 await app.register(collectRawRoute)
+await app.register(gbrainStatsRoute)
 
 app.get('/', async () => ({ status: 'ok', service: 'Pulse backend', ts: Date.now() }))
 app.get('/health', async () => ({ ok: true, ts: Date.now() }))
