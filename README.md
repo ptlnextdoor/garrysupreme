@@ -1,3 +1,7 @@
+<p align="center">
+  <img src=".github/assets/heyg-banner.png" alt="hey, G! Never miss a call again. AI voice concierge with memory." width="100%">
+</p>
+
 # Pulse HOG Demo
 
 Pulse is a voice concierge demo for HOG-backed company brains. The live demo is Costco-first, with Starbucks as a second proof point.
