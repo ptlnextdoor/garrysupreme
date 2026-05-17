@@ -102,6 +102,118 @@ export const saveState = mutation({
   }
 });
 
+export const clearCompanyCatalog = mutation({
+  args: {
+    companyId: v.string(),
+    limit: v.optional(v.number())
+  },
+  handler: async (ctx, args) => {
+    const rows = await ctx.db
+      .query("companyCatalog")
+      .withIndex("by_company", (q) => q.eq("companyId", args.companyId))
+      .take(args.limit ?? 500);
+
+    for (const row of rows) {
+      await ctx.db.delete(row._id);
+    }
+
+    return { deleted: rows.length };
+  }
+});
+
+export const insertCompanyCatalogBatch = mutation({
+  args: {
+    companyId: v.string(),
+    items: v.array(v.object({
+      catalogId: v.string(),
+      sku: v.string(),
+      name: v.string(),
+      description: v.string(),
+      category: v.string(),
+      tags: v.array(v.string()),
+      stock: v.string(),
+      priceBand: v.optional(v.string()),
+      raw: v.optional(v.any())
+    }))
+  },
+  handler: async (ctx, args) => {
+    for (const item of args.items) {
+      await ctx.db.insert("companyCatalog", {
+        companyId: args.companyId,
+        ...item
+      });
+    }
+
+    return { inserted: args.items.length };
+  }
+});
+
+export const replaceCompanyPolicies = mutation({
+  args: {
+    companyId: v.string(),
+    policies: v.array(v.object({
+      title: v.string(),
+      body: v.string(),
+      source: v.optional(v.string())
+    }))
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("companyPolicies")
+      .withIndex("by_company", (q) => q.eq("companyId", args.companyId))
+      .collect();
+
+    for (const row of existing) {
+      await ctx.db.delete(row._id);
+    }
+
+    const updatedAt = Date.now();
+    for (const policy of args.policies) {
+      await ctx.db.insert("companyPolicies", {
+        companyId: args.companyId,
+        title: policy.title,
+        body: policy.body,
+        source: policy.source,
+        updatedAt
+      });
+    }
+
+    return { deleted: existing.length, inserted: args.policies.length };
+  }
+});
+
+export const getHogDataStats = query({
+  args: {},
+  handler: async (ctx) => {
+    const companyIds = ["costco", "starbucks"];
+    const catalog: Record<string, number> = {};
+    const policies: Record<string, number> = {};
+
+    for (const companyId of companyIds) {
+      catalog[companyId] = (await ctx.db
+        .query("companyCatalog")
+        .withIndex("by_company", (q) => q.eq("companyId", companyId))
+        .collect()).length;
+      policies[companyId] = (await ctx.db
+        .query("companyPolicies")
+        .withIndex("by_company", (q) => q.eq("companyId", companyId))
+        .collect()).length;
+    }
+
+    const snapshot = await ctx.db
+      .query("stateSnapshots")
+      .withIndex("by_key", (q) => q.eq("key", "default"))
+      .unique();
+
+    return {
+      catalog,
+      policies,
+      hasDefaultState: Boolean(snapshot),
+      defaultStateUpdatedAt: snapshot?.updatedAt ?? null
+    };
+  }
+});
+
 type DemoState = {
   customers?: Record<string, DemoCustomer>;
   orders?: DemoOrder[];

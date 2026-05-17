@@ -1,141 +1,139 @@
-# Pulse — Multi-Agent Hackathon Build System
+# Pulse HOG Demo
 
-This is an autonomous multi-agent Claude Code orchestration system for the GStack x GBrain hackathon. You manage one terminal. Five Claude instances run simultaneously and communicate through a file-based task queue.
+Pulse is a voice concierge demo for HOG-backed company brains. The live demo is Costco-first, with Starbucks as a second proof point.
 
-## What You Have
+## Current Demo Path
 
-### Scripts (Run These)
-- **`./start.sh`** — Launch all 5 agents in named tmux panes. Do this first.
-- **`./inject.sh "feedback"`** — Send judge feedback to the CEO. Do this anytime during the hackathon.
-- **`./answer.sh 001 "your answer"`** — Answer CEO questions. Do this when asked.
-- **`./status.sh`** — Check build progress in real-time. Run anytime to see status.
+- Backend: `yc-gbrain/server`, deployed on Railway from `main`.
+- Dashboard: `web`, deployed on Vercel.
+- Durable state: Convex, using `convex/`.
+- Runtime HOG data: `yc-gbrain/server/data/`.
+- Explicit HOG data mirror: `hog-data/`.
+- Optional real local GBrain: `yc-gbrain/server/src/gbrain-local.ts`.
 
-### Documentation
-- **`QUICKSTART.md`** — Step-by-step getting started guide (read this first)
-- **`CLAUDE.md`** — Shared context all instances read
-- **`workflow/PROTOCOL.md`** — How agents communicate
-- **`workflow/STATUS.md`** — Live build status (auto-updated)
+Railway currently builds and starts the `yc-gbrain/server` app via `railway.json`. Aarya's `apps/` and `packages/gbrain` work remains in the repo, but it is not the active Railway service.
 
-### Role Instructions
-- **`roles/CEO.md`** — Orchestrator (Opus 4.7)
-- **`roles/SMART_CODER.md`** — Complex code (Opus 4.7)
-- **`roles/STUPID_CODER.md`** — Scaffolding (Sonnet 4.6)
-- **`roles/DEBUGGER.md`** — Code review (Opus 4.7)
-- **`roles/BOARD_MEMBER.md`** — You
+## HOG Data
 
-### Task Queue
-- **`workflow/inbox-smart/`** — Tasks for Smart Coder
-- **`workflow/inbox-stupid/`** — Tasks for Stupid Coder (3 tasks pre-loaded!)
-- **`workflow/inbox-debug/`** — Tasks for Debugger
-- **`workflow/done/`** — Completed tasks
-- **`workflow/issues/`** — Debugger's bug reports
-- **`workflow/board-questions/`** — CEO's questions to you (q-001 waiting!)
-- **`workflow/board-answers/`** — Your answers + auto-generated directives
+The HOG data lives in two places:
 
----
+- `hog-data/` is the obvious source/provenance folder for review.
+- `yc-gbrain/server/data/` is the runtime copy loaded by the Railway backend.
 
-## How to Use (In Order)
+Catalog counts:
 
-### 1. Start Everything
+- Costco: 5,329 product rows.
+- Starbucks: 935 product rows.
+
+Costco and Starbucks are kept as separate company brains throughout the app.
+
+## Local Development
+
 ```bash
-cd ~/garrysupreme && ./start.sh && tmux attach -t pulse
+npm install
+npm run dev
 ```
 
-You'll see 4 Claude terminals in a 2x2 grid, plus a 5th terminal for you.
+Useful checks:
 
-### 2. Initialize Each Agent (first 2 minutes)
-Paste the init prompt for each role into its pane. See `QUICKSTART.md` for exact prompts.
-
-### 3. Answer the First Question
-The CEO will ask you for API keys. Run:
 ```bash
-./answer.sh 001 "Vapi API key: xxx, GBrain API key: yyy, ..."
+npm run typecheck
+npm run build
+npm --workspace @pulse/server run typecheck
+npm --workspace @pulse/server run build
 ```
 
-### 4. The Build Runs Autonomously
-- Stupid Coder starts immediately (3 P0 scaffolding tasks waiting)
-- CEO assigns work every 60 seconds
-- Smart Coder picks up tasks every 45 seconds
-- Debugger reviews every 90 seconds
-- No copy-paste. No manual handoffs. Everything is polled from `workflow/`
+## Backend API
 
-### 5. Send Feedback Anytime
-When judges or sponsors give feedback:
+- `GET /health`
+- `GET /api/dashboard`
+- `GET /api/companies`
+- `POST /api/context`
+- `POST /api/search`
+- `POST /api/save_order`
+- `POST /api/demo/reset`
+- `POST /api/vapi/webhook`
+
+Vapi should point at:
+
+```txt
+https://<railway-domain>/api/vapi/webhook
+```
+
+## Convex
+
+Convex stores durable demo state and mirrored HOG catalog/policy data.
+
+Required runtime env for Railway Convex writes:
+
+```txt
+CONVEX_URL=https://<deployment>.convex.cloud
+CONVEX_DEPLOYMENT=dev:<deployment-name>
+CONVEX_WRITE_ENABLED=true
+```
+
+Deploy Convex functions:
+
 ```bash
-./inject.sh "Judge said focus more on the memory review UI"
-./inject.sh "Sponsor wants to see GBrain writes happening live"
-./inject.sh "Pivot: show customer profile cards on the dashboard"
+npm run convex:deploy -- --env-file /path/to/.env.local
 ```
 
-The CEO reads this within 60 seconds and reprioritizes.
+Seed HOG data and reset demo state into Convex:
 
-### 6. Monitor Progress
 ```bash
-./status.sh
+npm run convex:seed:hog
 ```
 
-Shows: current phase, completed tasks, pending questions, debugger issues, in-progress work.
+The seed script loads `.env.local` if present and accepts `CONVEX_URL` or `NEXT_PUBLIC_CONVEX_URL`.
 
----
+## Railway Env
 
-## The Architecture
+Minimum:
 
-**Communication flow:**
-```
-You (at hackathon)
-  ↓ ./inject.sh "feedback"
-  ↓
-CEO (reads every 60s with /loop)
-  ├─→ creates task → Smart Coder (reads every 45s)
-  ├─→ creates task → Stupid Coder (reads every 30s)
-  └─→ creates task → Debugger (reads every 90s after work done)
-  ↑
-  └─ reads feedback directives from you
+```txt
+NODE_ENV=production
+FRONTEND_URL=https://web-five-ruby-11.vercel.app
+DASHBOARD_ORIGIN=https://web-five-ruby-11.vercel.app
+DEMO_PHONE=+13203648288
 ```
 
-**Task lifecycle:**
-1. CEO writes `TASK-XXX.md` to `workflow/inbox-{worker}/`
-2. Worker finds task, edits status to `in-progress`
-3. Worker writes code, moves task to `workflow/done/`
-4. Debugger reviews, writes issues if needed
-5. CEO reads done tasks + issues, assigns fixes or next work
+Vapi:
 
----
+```txt
+VAPI_API_KEY=
+VAPI_SECRET=
+VAPI_ASSISTANT_ID=
+VAPI_PHONE_NUMBER_ID=
+```
 
-## Rules
+Optional sponsor/local GBrain:
 
-- **One command from you** sends feedback → entire system responds within 2 minutes
-- **No manual copy-paste** between agents (they poll files autonomously)
-- **CEO handles all orchestration** (you just send feedback)
-- **Each agent owns specific files** (no conflicts, see your role file)
-- **Debugger catches bugs early** (before they break the demo)
-- **File-based communication** (zero infrastructure, works offline)
+```txt
+GBRAIN_API_KEY=
+GBRAIN_BASE_URL=
+GBRAIN_PROJECT_ID=
+GSTACK_API_KEY=
+GSTACK_BASE_URL=
+GSTACK_PROJECT_ID=
+GBRAIN_LOCAL_ENABLED=false
+```
 
----
+## Demo Calls
 
-## Keyboard Shortcuts (in tmux)
+Costco smoke prompt:
 
-Once attached to the session:
-- `Ctrl+B` then `arrow keys` — switch between panes
-- `Ctrl+B` then `n` / `p` — next/previous window
-- `Ctrl+B` then `d` — detach (session keeps running)
-- `tmux attach -t pulse` — reattach anytime
+```txt
+Can you reorder my usual breakroom stuff from Costco? My number is 6697320048.
+```
 
----
+Costco event prompt:
 
-## If You Get Stuck
+```txt
+I need snacks and drinks for 35 people under $250, no peanuts, preferably Kirkland.
+```
 
-1. **Check the CEO's questions:** `cat workflow/board-questions/q-001.md`
-2. **Check build status:** `./status.sh`
-3. **Check debugger's issues:** `ls workflow/issues/` and `cat workflow/issues/ISSUE-001.md`
-4. **Manually kill and restart:** `./start.sh && tmux attach -t pulse`
+Starbucks smoke prompt:
 
----
-
-## What's Next
-
-Read **`QUICKSTART.md`** for the step-by-step getting started guide.
-
-Then run: **`./start.sh && tmux attach -t pulse`**
-
-Good luck at the hackathon! 🚀
+```txt
+I do not know Starbucks words. I want something warm, cozy, oat milk, and not too sweet.
+```
