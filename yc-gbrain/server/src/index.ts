@@ -3,7 +3,7 @@ import websocket from "@fastify/websocket";
 import Fastify, { type FastifyRequest } from "fastify";
 import { z, ZodError } from "zod";
 import { approveMemory, endDemoCall, getContext, getDashboard, learnPreference, listCompanies, recordVapiLifecycle, rejectMemory, resetDemo, saveOrder, searchCompanyCatalog, startDemoCall } from "./store.js";
-import { extractToolArguments, getVapiCallerNumber, getVapiToolName, vapiToolResponse } from "./vapi.js";
+import { extractToolArguments, getVapiCallerNumber, getVapiToolDebug, getVapiToolName, vapiToolErrorResponse, vapiToolResponse } from "./vapi.js";
 
 const app = Fastify({
   logger: {
@@ -88,46 +88,56 @@ app.get("/api/customers/:id", async (request, reply) => {
 
 app.post("/api/context", async (request) => {
   requireDemoToken(request);
-  const args = withCallerPhoneFallback(extractToolArguments(request.body), request.body);
-  const schema = z.object({
-    company_id: z.string().optional().default("costco"),
-    phone_number: optionalPhone,
-    request: z.string().optional().default(""),
-    language: z.enum(["en", "hi"]).optional().default("en")
-  });
-  const parsed = schema.parse(args);
-  const result = await getContext(parsed.company_id, parsed.phone_number, parsed.request, parsed.language);
+  try {
+    const args = withCallerPhoneFallback(extractToolArguments(request.body), request.body);
+    const schema = z.object({
+      company_id: z.string().optional().default("costco"),
+      phone_number: optionalPhone,
+      request: z.string().optional().default(""),
+      language: z.enum(["en", "hi"]).optional().default("en")
+    });
+    const parsed = schema.parse(args);
+    const result = await getContext(parsed.company_id, parsed.phone_number, parsed.request, parsed.language);
 
-  broadcast("context_loaded", {
-    company: result.company.name,
-    customer: result.customer.name,
-    request: parsed.request,
-    language: parsed.language
-  });
-  broadcast("dashboard_updated", await getDashboard());
+    broadcast("context_loaded", {
+      company: result.company.name,
+      customer: result.customer.name,
+      request: parsed.request,
+      language: parsed.language
+    });
+    broadcast("dashboard_updated", await getDashboard());
 
-  return vapiToolResponse(request.body, result);
+    return vapiToolResponse(request.body, result);
+  } catch (error) {
+    if (getVapiToolName(request.body)) return vapiToolErrorResponse(request.body, error);
+    throw error;
+  }
 });
 
 app.post("/api/save_order", async (request) => {
   requireDemoToken(request);
-  const args = withCallerPhoneFallback(extractToolArguments(request.body), request.body);
-  const schema = z.object({
-    company_id: z.string().optional().default("costco"),
-    customer_name: optionalString,
-    phone_number: optionalString,
-    items: stringList.pipe(z.array(z.string()).min(1)),
-    new_preferences: stringList.default([]),
-    confidence: z.coerce.number().optional(),
-    language: z.enum(["en", "hi"]).optional().default("en")
-  });
-  const parsed = schema.parse(args);
-  const order = await saveOrder(parsed);
+  try {
+    const args = withCallerPhoneFallback(extractToolArguments(request.body), request.body);
+    const schema = z.object({
+      company_id: z.string().optional().default("costco"),
+      customer_name: optionalString,
+      phone_number: optionalString,
+      items: stringList.pipe(z.array(z.string()).min(1)),
+      new_preferences: stringList.default([]),
+      confidence: z.coerce.number().optional(),
+      language: z.enum(["en", "hi"]).optional().default("en")
+    });
+    const parsed = schema.parse(args);
+    const order = await saveOrder(parsed);
 
-  broadcast("order_saved", order);
-  broadcast("dashboard_updated", await getDashboard());
+    broadcast("order_saved", order);
+    broadcast("dashboard_updated", await getDashboard());
 
-  return vapiToolResponse(request.body, { ok: true, order });
+    return vapiToolResponse(request.body, { ok: true, order });
+  } catch (error) {
+    if (getVapiToolName(request.body)) return vapiToolErrorResponse(request.body, error);
+    throw error;
+  }
 });
 
 app.post("/api/learn", async (request) => {
@@ -216,8 +226,21 @@ app.post("/api/demo/reset", async (request) => {
 
 app.post("/api/vapi/webhook", async (request) => {
   requireDemoToken(request);
-  const toolResponse = await handleVapiToolCall(request.body);
-  if (toolResponse) return toolResponse;
+  const debug = getVapiToolDebug(request.body);
+  if (debug.toolCallId !== "none") {
+    app.log.info({ vapiTool: debug }, "Vapi tool call received");
+  }
+
+  try {
+    const toolResponse = await handleVapiToolCall(request.body);
+    if (toolResponse) return toolResponse;
+  } catch (error) {
+    app.log.error({
+      vapiTool: debug,
+      error: error instanceof Error ? error.message : String(error)
+    }, "Vapi tool call failed");
+    return vapiToolErrorResponse(request.body, error);
+  }
 
   const body = request.body as Record<string, unknown>;
   const message = typeof body.message === "object" && body.message !== null ? body.message as Record<string, unknown> : {};
