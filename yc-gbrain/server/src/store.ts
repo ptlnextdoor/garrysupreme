@@ -854,15 +854,17 @@ export async function learnPreference(customerName: string, preference: string, 
 
 export async function recordVapiLifecycle(input: {
   event: string;
+  status?: unknown;
   company_id?: unknown;
   call_id?: string;
   phone_number?: string;
   customer_name?: string;
 }) {
-  const event = input.event.toLowerCase();
+  const lifecycle = classifyVapiLifecycleEvent(input.event, input.status);
+  const event = lifecycle.event;
   const companyId = normalizeCompanyId(input.company_id);
-  const isStart = event.includes("status-update") || event.includes("call-start") || event.includes("call_started") || event.includes("in-progress");
-  const isEnd = event.includes("end-of-call-report") || event.includes("call-end") || event.includes("call_ended") || event.includes("ended");
+  const isStart = lifecycle.isStart;
+  const isEnd = lifecycle.isEnd;
   if (!isStart && !isEnd) return null;
 
   return updateState((state) => {
@@ -917,6 +919,25 @@ export async function recordVapiLifecycle(input: {
     });
     return call;
   });
+}
+
+export function classifyVapiLifecycleEvent(eventInput: unknown, statusInput?: unknown) {
+  const event = String(eventInput ?? "unknown").toLowerCase();
+  const status = String(statusInput ?? "").toLowerCase();
+  const statusUpdate = event.includes("status-update");
+  const isEnd = event.includes("end-of-call-report") ||
+    event.includes("call-end") ||
+    event.includes("call_ended") ||
+    event.includes("ended") ||
+    ["ended", "completed", "failed"].includes(status);
+  const isStart = !isEnd && (
+    event.includes("call-start") ||
+    event.includes("call_started") ||
+    event.includes("in-progress") ||
+    (statusUpdate && (!status || ["queued", "ringing", "in-progress", "started"].includes(status)))
+  );
+
+  return { event, status, isStart, isEnd };
 }
 
 export async function startDemoCall(companyIdInput: unknown = "costco") {

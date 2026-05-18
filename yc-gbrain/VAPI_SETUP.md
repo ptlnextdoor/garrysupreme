@@ -85,10 +85,12 @@ If you have a Vapi API key locally, update the assistant directly:
 export VAPI_API_KEY="..."
 export VAPI_ASSISTANT_ID="e629180c-f769-445d-923f-639c3c8ee37a"
 export PUBLIC_URL="https://YOUR_NGROK_URL.ngrok-free.app"
+# Optional: if the backend requires PULSE_DEMO_TOKEN, export the same value here.
+export PULSE_DEMO_TOKEN=""
 npm run vapi:update:multilingual
 ```
 
-The assistant prompt now explicitly supports English, Hindi, and Hinglish. The tools also accept `language: "en" | "hi"` so the backend can return a language instruction with the catalog context.
+The assistant prompt now explicitly supports English, Hindi, and Hinglish. The tools also accept `language: "en" | "hi"` so the backend can return a language instruction with the catalog context. If `PULSE_DEMO_TOKEN` is set when running the update script, the script appends it to each Vapi tool URL.
 
 ## 3B. Production verification
 

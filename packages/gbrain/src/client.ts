@@ -241,6 +241,75 @@ export class GBrainClient {
     }
   }
 
+  /**
+   * Append a timeline entry to a page. Used for behavioral audit trails
+   * (e.g. "2026-05-17 — placed bulk order: 8 items, $124.50").
+   * Gbrain stores these as immutable, queryable, dated events.
+   *
+   * gbrain's add_timeline_entry tool requires (slug, date, summary).
+   * Optional: detail, source.
+   */
+  async addTimelineEntry(slug: string, date: string, summary: string, opts: { detail?: string; source?: string } = {}): Promise<unknown> {
+    if (this.mode === 'file') return { skipped: 'file-mode' }
+    const fullSlug = projectPrefix(this.projectId) + slug.replace(/^\/+/, '').replace(/\.md$/, '')
+    try {
+      const args: Record<string, unknown> = { slug: fullSlug, date, summary }
+      if (opts.detail) args.detail = opts.detail
+      if (opts.source) args.source = opts.source
+      return await this.mcpCall('add_timeline_entry', args)
+    } catch (err) {
+      return { error: String(err) }
+    }
+  }
+
+  /** Get timeline entries for a page (or whole brain if slug omitted). */
+  async getTimeline(slug?: string, limit = 20): Promise<unknown> {
+    if (this.mode === 'file') return []
+    try {
+      const args: Record<string, unknown> = { limit }
+      if (slug) args.slug = projectPrefix(this.projectId) + slug.replace(/^\/+/, '').replace(/\.md$/, '')
+      return await this.mcpCall('get_timeline', args)
+    } catch (err) {
+      return { error: String(err) }
+    }
+  }
+
+  /** Create a typed graph link between two pages (e.g. customer → ordered → menu_item). */
+  async addLink(from: string, to: string, linkType: string): Promise<unknown> {
+    if (this.mode === 'file') return { skipped: 'file-mode' }
+    const fromSlug = projectPrefix(this.projectId) + from.replace(/^\/+/, '').replace(/\.md$/, '')
+    const toSlug = projectPrefix(this.projectId) + to.replace(/^\/+/, '').replace(/\.md$/, '')
+    try {
+      return await this.mcpCall('add_link', { from: fromSlug, to: toSlug, link_type: linkType })
+    } catch (err) {
+      return { error: String(err) }
+    }
+  }
+
+  /** Traverse the graph starting from a slug. */
+  async traverseGraph(slug: string, opts: { depth?: number; linkType?: string; direction?: 'in' | 'out' | 'both' } = {}): Promise<unknown> {
+    if (this.mode === 'file') return { nodes: [] }
+    const fullSlug = projectPrefix(this.projectId) + slug.replace(/^\/+/, '').replace(/\.md$/, '')
+    try {
+      const args: Record<string, unknown> = { slug: fullSlug, depth: opts.depth ?? 1, direction: opts.direction ?? 'both' }
+      if (opts.linkType) args.link_type = opts.linkType
+      return await this.mcpCall('traverse_graph', args)
+    } catch (err) {
+      return { error: String(err) }
+    }
+  }
+
+  /** Add a tag to a page. */
+  async addTag(slug: string, tag: string): Promise<unknown> {
+    if (this.mode === 'file') return { skipped: 'file-mode' }
+    const fullSlug = projectPrefix(this.projectId) + slug.replace(/^\/+/, '').replace(/\.md$/, '')
+    try {
+      return await this.mcpCall('add_tag', { slug: fullSlug, tag })
+    } catch (err) {
+      return { error: String(err) }
+    }
+  }
+
   // ===== MCP protocol over Streamable HTTP =====
   // POST {baseUrl}/mcp with bearer auth; responses arrive as
   // SSE: "event: message\ndata: {jsonrpc:...}\n\n"

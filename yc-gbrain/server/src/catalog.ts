@@ -678,7 +678,7 @@ function costcoCategory(name: string) {
   if (/paper towel|trash bag|disinfect|wipes|detergent|clean|janitorial|soap/.test(lower)) return "Cleaning and facilities supplies";
   if (/plate|cup|napkin|utensil|bowl|serveware|fork|spoon/.test(lower)) return "Paper and disposable serveware";
   if (/coffee|k-cup|keurig|creamer|sweetener|sugar/.test(lower)) return "Coffee and breakroom";
-  if (/water|sparkling|soda|juice|tea|drink|beverage|coke|pepsi/.test(lower) && !/tuna|chicken|dispenser|refrigerator/.test(lower)) return "Beverages";
+  if (/\b(?:water|sparkling|soda|juice|tea|drink|drinks|beverage|beverages|coke|pepsi)\b/.test(lower) && !/\b(?:tuna|chicken|dispenser|refrigerator)\b/.test(lower)) return "Beverages";
   if (/bakery|cake|cookie|muffin|dessert|chocolate|brownie|pastry/.test(lower)) return "Bakery and desserts";
   if (/frozen|appetizer|pizza|meal/.test(lower)) return "Frozen appetizers and meals";
   if (/produce|fruit|vegetable|salad|organic/.test(lower)) return "Produce and healthy snacks";
@@ -836,8 +836,10 @@ function diversifyRanked<T extends { item: CatalogItem; score: number }>(company
   const wanted = ["Beverages", "Shelf-stable snacks", "Coffee and breakroom", "Paper and disposable serveware", "Produce and healthy snacks"];
   const selected: T[] = [];
   const used = new Set<string>();
+  const topScore = ranked[0]?.score ?? 0;
+  const viableScore = topScore * 0.6;
   for (const category of wanted) {
-    const match = ranked.find((candidate) => candidate.item.category === category && !used.has(candidate.item.sku));
+    const match = ranked.find((candidate) => candidate.score >= viableScore && candidate.item.category === category && !used.has(candidate.item.sku));
     if (match) {
       selected.push(match);
       used.add(match.item.sku);

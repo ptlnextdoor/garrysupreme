@@ -272,9 +272,11 @@ app.post("/api/vapi/webhook", async (request) => {
       : {};
   const customer = typeof call.customer === "object" && call.customer !== null ? call.customer as Record<string, unknown> : {};
   const event = String(body.type ?? body.event ?? message.type ?? "unknown");
+  const status = body.status ?? message.status ?? call.status;
   const companyId = body.company_id ?? message.company_id ?? "costco";
   const lifecycleCall = await recordVapiLifecycle({
     event,
+    status,
     company_id: companyId,
     call_id: typeof call.id === "string" ? call.id : undefined,
     phone_number: typeof customer.number === "string" ? customer.number : undefined,

@@ -5,6 +5,7 @@ import { hub } from '../services/sse-hub.js'
 import type { CustomerProfile, MenuItem, MemoryFact } from '@pulse/types'
 import { activeCalls } from './queries.js'
 import { z } from 'zod'
+import { pickInsight } from './intel.js'
 
 const COMPANY_SLUG = 'costco'
 const ANONYMOUS_PROFILE: CustomerProfile = {
@@ -18,6 +19,14 @@ const ANONYMOUS_PROFILE: CustomerProfile = {
 const log = (msg: string, data?: unknown): void => {
   if (data !== undefined) console.error(`[route:vapi-webhook] ${msg}`, data)
   else console.error(`[route:vapi-webhook] ${msg}`)
+}
+
+function slugifyItemName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80)
 }
 
 const saveOrderArgsSchema = z.object({
@@ -47,6 +56,9 @@ async function handleGetContext(
   const customer: CustomerProfile = profile ?? ANONYMOUS_PROFILE
   const rankedMenu: MenuItem[] = menu.length ? rankMenu(menu, session, profile) : menu
 
+  // Pull a Hog-derived talking point if the customer's request matches a tracked keyword
+  const intelHit = pickInsight(request)
+
   return {
     customer,
     company: {
@@ -55,6 +67,9 @@ async function handleGetContext(
       menu: rankedMenu,
       rules: policies,
     },
+    intel: intelHit
+      ? { source: 'The Hog', matched: intelHit.trigger, talking_point: intelHit.text }
+      : null,
     session,
   }
 }
@@ -64,6 +79,7 @@ async function handleSaveOrder(
   callId: string,
   args: z.infer<typeof saveOrderArgsSchema>,
   customers: CustomerBrain,
+  gbrain: GBrainClient,
 ) {
   const normalized = normalizePhone(phone)
   const placedAt = new Date().toISOString()
@@ -74,6 +90,32 @@ async function handleSaveOrder(
       try {
         const orderLine = `**${placedAt.slice(0, 10)}** — ${args.items.join(', ')}`
         await customers.appendOrderToHistory(normalized, orderLine)
+
+        // GBrain timeline: append immutable behavioral event to the customer page.
+        // Resolve the actual gbrain slug for this customer (frontmatter lookup
+        // by phone). Falls back to 'customers/demo-customer' for the seeded
+        // demo so the timeline always lands somewhere existing.
+        const resolvedCustomerSlug =
+          (await gbrain.searchFrontmatter('customers', 'phone', normalized)) ??
+          'customers/demo-customer'
+        const summary = `voice order via call ${callId.slice(0, 12)} — ${args.items.length} item(s)`
+        const detail = args.items.slice(0, 8).map((i) => `• ${i}`).join('\n')
+        void gbrain
+          .addTimelineEntry(resolvedCustomerSlug, placedAt.slice(0, 10), summary, {
+            detail,
+            source: 'pulse-voice',
+          })
+          .catch((err) => log('addTimelineEntry failed (non-fatal)', err))
+
+        // GBrain typed graph: link customer → ordered → menu item, so we can
+        // traverse "what does Aarya usually order?" via traverse_graph.
+        // Link target uses the actual menu page slug (single page).
+        const menuSlug = 'companies/costco/menu'
+        for (const _item of args.items.slice(0, 10)) {
+          void gbrain
+            .addLink(resolvedCustomerSlug, menuSlug, 'ordered')
+            .catch((err) => log(`addLink ${resolvedCustomerSlug}->${menuSlug} failed (non-fatal)`, err))
+        }
 
         hub.broadcast({
           type: 'order_saved',
@@ -199,7 +241,7 @@ const vapiWebhookRoute: FastifyPluginAsync = async (app: FastifyInstance) => {
           } else if (toolName === 'save_order') {
             const parsed = saveOrderArgsSchema.safeParse(args)
             const orderArgs = parsed.success ? parsed.data : saveOrderArgsSchema.parse({})
-            result = await handleSaveOrder(phone, callId, orderArgs, customerBrain)
+            result = await handleSaveOrder(phone, callId, orderArgs, customerBrain, client)
           } else {
             log(`unknown tool: ${toolName}`)
             result = { error: `unknown tool: ${toolName}` }
