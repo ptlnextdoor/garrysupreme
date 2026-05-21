@@ -36,6 +36,11 @@ Everything the business knows — menu items, ingredients, allergens, pricing, p
 ### The Customer Brain (powered by GBrain)
 Everything the business has learned about THIS specific customer — order history, taste preferences, dietary needs, communication style, language preference, family context. Updated automatically after every interaction. Compounds over time.
 
+### Brain Evolution Rule
+The Customer Brain evolves after every call. Each interaction should make that customer's context richer: what they ordered, what they liked or rejected, how they describe what they want, allergies or dietary constraints they volunteered, language preference, household context, and confidence-scored notes with evidence.
+
+The Company Brain does not silently evolve from individual customer conversations. A customer can reveal demand signals or feedback, but menu items, pricing, policies, allergens, hours, stock rules, and business facts only change through business-owned sources: owner edits, POS/inventory integrations, admin review, or approved aggregate insights. In other words: customer calls enrich customer context by default; they only create candidate business insights for review.
+
 ### The Magic
 When a customer calls, Pulse merges both brains in real-time:
 
@@ -74,14 +79,15 @@ Customer dials business phone number
     Pulse Backend (Fastify)
     ├── get_customer_context(phone) → reads Customer Brain from GBrain
     ├── get_menu(query) → reads Company Brain from GBrain
-    └── save_preferences(data) → writes learned preferences back to GBrain
+    └── save_interaction(data) → writes learned customer facts back to GBrain
          │
          ▼
     GBrain Knowledge Layer
     ├── companies/{slug}/menu.md
+    │   └── business-owned source of truth; not rewritten by raw calls
     ├── companies/{slug}/policies.md
-    ├── customers/{name}.md        ← updated after every call
-    └── insights/weekly.md         ← aggregated business intelligence
+    ├── customers/{name}.md        ← enriched after every call
+    └── insights/weekly.md         ← aggregated business intelligence for review
          │
          ▼
     Business Dashboard (Next.js)
@@ -107,6 +113,7 @@ GBrain is not a nice-to-have — it IS the product's core:
   - Identify cross-sell patterns ("67% of chai customers also like the lavender latte")
   - Update churn risk scores
   - Enrich customer profiles with inferred preferences
+  - Produce candidate Company Brain updates for owner/admin approval instead of rewriting business facts automatically
 - **Hybrid search** → When a customer says "something sweet and cold," GBrain's vector + keyword search finds the most relevant menu items
 
 ---
@@ -275,14 +282,14 @@ Even at HALF these numbers (50% of recovered calls convert, zero upsell effect),
 
 Every competitor treats each call as a blank slate. Pulse doesn't.
 
-The 10th call is dramatically better than the 1st call. By the 50th call, Pulse knows:
+The 10th call is dramatically better than the 1st call because the Customer Brain evolves on every interaction. By the 50th call, Pulse knows:
 - Your name, your usual order, your dietary restrictions
 - That you like extra sweet, always get oat milk, prefer cold drinks in summer
 - That you come in with your mom on Saturdays and she always gets chai
 - That you tried the lavender latte and didn't like it (won't recommend it again)
 - That your daughter has a nut allergy
 
-**This memory compounds.** The longer a business uses Pulse, the more valuable it becomes. Switching costs increase every day. No competitor has this because no competitor is built on a persistent knowledge graph architecture.
+**This memory compounds.** The longer a business uses Pulse, the more valuable it becomes. Customer context gets richer after every call, while the Company Brain stays trustworthy because customer conversations do not silently rewrite business facts. Switching costs increase every day. No competitor has this because no competitor is built on a persistent knowledge graph architecture.
 
 ---
 
